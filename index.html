@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Test Portal</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -15,7 +18,7 @@
 
     body {
       background: #f4f7fb;
-      color: #1f2937;
+      color: #111827;
     }
 
     header {
@@ -27,132 +30,774 @@
       align-items: center;
     }
 
-    header h1 {
-      font-size: 22px;
-    }
-
     .container {
       max-width: 1100px;
-      margin: 40px auto;
+      margin: 35px auto;
       padding: 20px;
     }
 
-    .hero {
+    .box {
       background: white;
-      padding: 45px 30px;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 5px 25px rgba(0,0,0,0.08);
-    }
-
-    .hero h2 {
-      font-size: 34px;
-      margin-bottom: 12px;
-    }
-
-    .hero p {
-      color: #6b7280;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.08);
       margin-bottom: 25px;
     }
 
-    .btn {
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    button {
       border: none;
-      padding: 12px 22px;
+      background: #2563eb;
+      color: white;
+      padding: 12px 20px;
       border-radius: 8px;
       cursor: pointer;
       font-size: 15px;
-      background: #2563eb;
-      color: white;
     }
 
-    .btn:hover {
+    button:hover {
       background: #1d4ed8;
     }
 
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-top: 30px;
+    .danger {
+      background: #dc2626;
     }
 
-    .card {
-      background: white;
-      padding: 25px;
-      border-radius: 14px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    .danger:hover {
+      background: #b91c1c;
     }
 
-    .card h3 {
-      margin-bottom: 10px;
+    .hidden {
+      display: none !important;
     }
 
-    .card p {
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      background: #eef2ff;
+    }
+
+    .question-box {
+      border: 1px solid #e5e7eb;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+
+    .question-box h3 {
+      margin-bottom: 12px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .test-card {
+      border: 1px solid #e5e7eb;
+      padding: 18px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+
+    .test-card small {
       color: #6b7280;
-      line-height: 1.5;
     }
 
-    footer {
-      text-align: center;
-      padding: 30px;
-      color: #6b7280;
+    .share-link {
+      background: #f3f4f6;
+      padding: 10px;
+      border-radius: 7px;
+      word-break: break-all;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <h1>📝 Test Portal</h1>
-    <span>Online Examination System</span>
-  </header>
+<header>
+  <h1>📝 Test Portal</h1>
+  <div id="headerRight"></div>
+</header>
 
-  <main class="container">
+<div class="container">
 
-    <section class="hero">
-      <h2>Welcome to Test Portal</h2>
-      <p>Create, share and conduct online examinations easily.</p>
+  <!-- LOGIN -->
+  <section id="loginSection" class="box">
+    <h2>Admin Login</h2>
 
-      <button class="btn" onclick="adminLogin()">
-        Admin Login
+    <input
+      type="email"
+      id="email"
+      placeholder="Admin Email"
+    >
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Password"
+    >
+
+    <button onclick="login()">Login</button>
+
+    <div id="loginMessage" class="message hidden"></div>
+  </section>
+
+
+  <!-- DASHBOARD -->
+  <section id="dashboardSection" class="hidden">
+
+    <div class="box">
+      <div class="top-actions">
+        <button onclick="showCreateTest()">➕ Create New Test</button>
+        <button class="danger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+
+    <!-- CREATE TEST -->
+    <div id="createTestBox" class="box hidden">
+
+      <h2>Create Test</h2>
+
+      <label>Test Title</label>
+      <input
+        type="text"
+        id="testTitle"
+        placeholder="Example: General Knowledge Test"
+      >
+
+      <label>Description</label>
+      <textarea
+        id="testDescription"
+        placeholder="Test description"
+      ></textarea>
+
+      <label>Duration (minutes)</label>
+      <input
+        type="number"
+        id="testDuration"
+        value="30"
+        min="1"
+      >
+
+      <label>Negative Marking</label>
+      <input
+        type="number"
+        id="negativeMarking"
+        value="0"
+        min="0"
+        step="0.25"
+      >
+
+      <hr style="margin:25px 0;">
+
+      <h2>Questions</h2>
+
+      <div id="questionsContainer"></div>
+
+      <button onclick="addQuestion()">
+        ➕ Add Question
       </button>
-    </section>
 
-    <section class="cards">
+      <br><br>
 
-      <div class="card">
-        <h3>📚 Create Tests</h3>
-        <p>Create tests with multiple-choice questions, marks and time limits.</p>
+      <button onclick="createTest()">
+        🚀 Create & Save Test
+      </button>
+
+      <button onclick="hideCreateTest()">
+        Cancel
+      </button>
+
+      <div id="createMessage" class="message hidden"></div>
+
+    </div>
+
+
+    <!-- TEST LIST -->
+    <div class="box">
+      <h2>My Tests</h2>
+      <div id="testsList">
+        Loading...
       </div>
+    </div>
 
-      <div class="card">
-        <h3>🔗 Share Tests</h3>
-        <p>Generate a unique test link and share it with candidates.</p>
-      </div>
+  </section>
 
-      <div class="card">
-        <h3>⏱️ Timed Exams</h3>
-        <p>Candidates can take tests with an automatic countdown timer.</p>
-      </div>
+</div>
 
-      <div class="card">
-        <h3>📊 Results</h3>
-        <p>View candidate scores, correct answers, violations and submission details.</p>
-      </div>
 
-    </section>
+<script>
 
-  </main>
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 
-  <footer>
-    © 2026 Test Portal
-  </footer>
 
-  <script>
-    function adminLogin() {
-      alert("Admin login will be connected to Supabase in the next step.");
+  // -----------------------------
+  // INITIAL CHECK
+  // -----------------------------
+
+  checkUser();
+
+
+  async function checkUser() {
+
+    const {
+      data: { user }
+    } = await db.auth.getUser();
+
+    if (user) {
+      showDashboard();
+    } else {
+      showLogin();
     }
-  </script>
+  }
+
+
+  // -----------------------------
+  // LOGIN
+  // -----------------------------
+
+  async function login() {
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const password =
+      document.getElementById("password").value;
+
+    const message =
+      document.getElementById("loginMessage");
+
+    if (!email || !password) {
+      showMessage(
+        message,
+        "Please enter email and password."
+      );
+      return;
+    }
+
+    const {
+      data,
+      error
+    } = await db.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) {
+      showMessage(message, error.message);
+      return;
+    }
+
+    showDashboard();
+  }
+
+
+  // -----------------------------
+  // LOGOUT
+  // -----------------------------
+
+  async function logout() {
+
+    await db.auth.signOut();
+
+    showLogin();
+
+  }
+
+
+  // -----------------------------
+  // SHOW LOGIN
+  // -----------------------------
+
+  function showLogin() {
+
+    document
+      .getElementById("loginSection")
+      .classList.remove("hidden");
+
+    document
+      .getElementById("dashboardSection")
+      .classList.add("hidden");
+
+    document
+      .getElementById("headerRight")
+      .innerHTML = "";
+
+  }
+
+
+  // -----------------------------
+  // SHOW DASHBOARD
+  // -----------------------------
+
+  async function showDashboard() {
+
+    document
+      .getElementById("loginSection")
+      .classList.add("hidden");
+
+    document
+      .getElementById("dashboardSection")
+      .classList.remove("hidden");
+
+    document
+      .getElementById("headerRight")
+      .innerHTML = "Admin";
+
+    await loadTests();
+
+  }
+
+
+  // -----------------------------
+  // CREATE TEST UI
+  // -----------------------------
+
+  function showCreateTest() {
+
+    document
+      .getElementById("createTestBox")
+      .classList.remove("hidden");
+
+    document
+      .getElementById("questionsContainer")
+      .innerHTML = "";
+
+    addQuestion();
+
+  }
+
+
+  function hideCreateTest() {
+
+    document
+      .getElementById("createTestBox")
+      .classList.add("hidden");
+
+  }
+
+
+  // -----------------------------
+  // ADD QUESTION
+  // -----------------------------
+
+  function addQuestion() {
+
+    const container =
+      document.getElementById("questionsContainer");
+
+    const number =
+      container.children.length + 1;
+
+    const box =
+      document.createElement("div");
+
+    box.className = "question-box";
+
+    box.innerHTML = `
+
+      <h3>Question ${number}</h3>
+
+      <textarea
+        class="questionText"
+        placeholder="Enter question"
+      ></textarea>
+
+      <input
+        class="option"
+        placeholder="Option A"
+      >
+
+      <input
+        class="option"
+        placeholder="Option B"
+      >
+
+      <input
+        class="option"
+        placeholder="Option C"
+      >
+
+      <input
+        class="option"
+        placeholder="Option D"
+      >
+
+      <select class="correctAnswer">
+        <option value="">Select Correct Answer</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+
+      <input
+        class="questionMarks"
+        type="number"
+        value="1"
+        min="0"
+        step="0.25"
+        placeholder="Marks"
+      >
+
+      <button
+        class="danger"
+        onclick="this.parentElement.remove()"
+      >
+        Remove Question
+      </button>
+
+    `;
+
+    container.appendChild(box);
+
+  }
+
+
+  // -----------------------------
+  // CREATE TEST
+  // -----------------------------
+
+  async function createTest() {
+
+    const message =
+      document.getElementById("createMessage");
+
+    const title =
+      document.getElementById("testTitle").value.trim();
+
+    const description =
+      document.getElementById("testDescription").value.trim();
+
+    const duration =
+      Number(document.getElementById("testDuration").value);
+
+    const negative =
+      Number(document.getElementById("negativeMarking").value);
+
+    const questionBoxes =
+      document.querySelectorAll(".question-box");
+
+
+    if (!title) {
+      showMessage(message, "Please enter test title.");
+      return;
+    }
+
+    if (questionBoxes.length === 0) {
+      showMessage(message, "Add at least one question.");
+      return;
+    }
+
+
+    const shareCode =
+      generateShareCode();
+
+
+    // Create test first
+    const {
+      data: test,
+      error: testError
+    } = await db
+      .from("tests")
+      .insert({
+        title: title,
+        description: description,
+        duration_minutes: duration,
+        negative_marking: negative,
+        total_marks: 0,
+        is_published: false,
+        share_code: shareCode
+      })
+      .select()
+      .single();
+
+
+    if (testError) {
+
+      showMessage(
+        message,
+        "Test creation failed: " +
+        testError.message
+      );
+
+      return;
+    }
+
+
+    let totalMarks = 0;
+
+
+    // Add questions
+    for (let i = 0; i < questionBoxes.length; i++) {
+
+      const box = questionBoxes[i];
+
+      const questionText =
+        box.querySelector(".questionText").value.trim();
+
+      const optionInputs =
+        box.querySelectorAll(".option");
+
+      const correctAnswer =
+        box.querySelector(".correctAnswer").value;
+
+      const marks =
+        Number(
+          box.querySelector(".questionMarks").value
+        );
+
+
+      const options = [
+        optionInputs[0].value.trim(),
+        optionInputs[1].value.trim(),
+        optionInputs[2].value.trim(),
+        optionInputs[3].value.trim()
+      ];
+
+
+      if (
+        !questionText ||
+        options.some(x => !x) ||
+        !correctAnswer
+      ) {
+
+        showMessage(
+          message,
+          "Please complete Question " +
+          (i + 1)
+        );
+
+        return;
+      }
+
+
+      totalMarks += marks;
+
+
+      const {
+        error: questionError
+      } = await db
+        .from("questions")
+        .insert({
+
+          test_id: test.id,
+
+          question_number: i + 1,
+
+          question_text: questionText,
+
+          question_type: "mcq",
+
+          options: {
+            A: options[0],
+            B: options[1],
+            C: options[2],
+            D: options[3]
+          },
+
+          correct_answer: correctAnswer,
+
+          marks: marks
+
+        });
+
+
+      if (questionError) {
+
+        showMessage(
+          message,
+          "Question " +
+          (i + 1) +
+          " failed: " +
+          questionError.message
+        );
+
+        return;
+      }
+
+    }
+
+
+    // Update total marks
+    await db
+      .from("tests")
+      .update({
+        total_marks: totalMarks
+      })
+      .eq("id", test.id);
+
+
+    showMessage(
+      message,
+      "✅ Test created successfully!"
+    );
+
+
+    document.getElementById("testTitle").value = "";
+    document.getElementById("testDescription").value = "";
+    document.getElementById("questionsContainer").innerHTML = "";
+
+
+    await loadTests();
+
+  }
+
+
+  // -----------------------------
+  // LOAD TESTS
+  // -----------------------------
+
+  async function loadTests() {
+
+    const list =
+      document.getElementById("testsList");
+
+    const {
+      data,
+      error
+    } = await db
+      .from("tests")
+      .select("*")
+      .order("created_at", {
+        ascending: false
+      });
+
+
+    if (error) {
+
+      list.innerHTML =
+        "<p>Unable to load tests.</p>";
+
+      return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+      list.innerHTML =
+        "<p>No tests created yet.</p>";
+
+      return;
+    }
+
+
+    list.innerHTML = "";
+
+
+    data.forEach(test => {
+
+      const card =
+        document.createElement("div");
+
+      card.className = "test-card";
+
+
+      const shareUrl =
+        window.location.origin +
+        window.location.pathname +
+        "?test=" +
+        test.share_code;
+
+
+      card.innerHTML = `
+
+        <h3>${escapeHtml(test.title)}</h3>
+
+        <small>
+          Duration: ${test.duration_minutes} minutes
+          |
+          Marks: ${test.total_marks}
+        </small>
+
+        <p style="margin-top:10px;">
+          Status:
+          <strong>
+            ${test.is_published ? "Published" : "Draft"}
+          </strong>
+        </p>
+
+        <div class="share-link">
+          ${shareUrl}
+        </div>
+
+      `;
+
+      list.appendChild(card);
+
+    });
+
+  }
+
+
+  // -----------------------------
+  // SHARE CODE
+  // -----------------------------
+
+  function generateShareCode() {
+
+    return Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
+
+  }
+
+
+  // -----------------------------
+  // MESSAGE
+  // -----------------------------
+
+  function showMessage(element, text) {
+
+    element.textContent = text;
+
+    element.classList.remove("hidden");
+
+  }
+
+
+  // -----------------------------
+  // ESCAPE HTML
+  // -----------------------------
+
+  function escapeHtml(text) {
+
+    const div =
+      document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+
+  }
+
+</script>
 
 </body>
 </html>

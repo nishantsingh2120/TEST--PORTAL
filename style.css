@@ -1,203 +1,228 @@
-/* General Layout & Center Alignment Fixes */
-body {
-    background-color: #0f172a;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* General Resets & Styling */
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #0f172a;
+    color: #f8fafc;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.container {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Navbar Centering */
+/* Navbar */
 .navbar {
     width: 100%;
-    max-width: 1200px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 30px;
-    box-sizing: border-box;
-    background: rgba(30, 41, 59, 0.8);
-    backdrop-filter: blur(15px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nav-links {
-    display: flex;
-    gap: 15px;
-}
-
-/* Cards - Glass Effect, Pop Animation & Perfect Centering */
-.card {
+    padding: 1rem 2rem;
     background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand-logo {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #818cf8;
+}
+
+/* Container & Cards */
+.container {
     width: 100%;
-    max-width: 750px;
-    margin: 15px auto;
-    box-sizing: border-box;
-    text-align: center;
+    max-width: 900px;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-/* Headings and Text inside Cards */
-.card h1, .card h2, .card h3 {
-    text-align: center;
-    color: #f8fafc;
+.card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.card p, .card label {
+.login-container {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* Form Styles */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
     text-align: left;
 }
 
-/* Form Group Layout */
-.form-group {
-    margin-bottom: 18px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+label {
+    font-size: 0.9rem;
+    color: #94a3b8;
 }
 
-.form-group label {
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #cbd5e1;
-}
-
-.form-group input, 
-.form-group select, 
-.form-group textarea {
-    width: 100%;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+input, select {
+    padding: 0.75rem 1rem;
     border-radius: 8px;
-    color: #ffffff;
-    box-sizing: border-box;
-    font-size: 1rem;
+    border: 1px solid #334155;
+    background-color: #0f172a;
+    color: #f8fafc;
     outline: none;
-    transition: border-color 0.3s;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-group input:focus, 
-.form-group select:focus, 
-.form-group textarea:focus {
+input:focus, select:focus {
     border-color: #818cf8;
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
 }
 
-/* Border Animation Effect */
-.card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
+/* Password Toggle Field Wrapper */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #818cf8, transparent);
-    transition: 0.6s ease-in-out;
+    overflow: hidden;
 }
 
-.card:hover {
-    transform: translateY(-8px) scale(1.01);
-    border-color: rgba(129, 140, 248, 0.6);
-    box-shadow: 0 20px 40px rgba(129, 140, 248, 0.25);
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
 }
 
-.card:hover::before {
-    left: 100%;
-}
-
-/* Glassmorphism Buttons */
-.btn {
-    padding: 12px 24px;
-    border-radius: 8px;
+.password-toggle-btn {
+    position: absolute;
+    right: 10px;
+    background: transparent;
     border: none;
     cursor: pointer;
+    font-size: 1.2rem;
+    outline: none;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    z-index: 3;
+}
+
+/* Dynamic Caret Tracker Emoji Style */
+.tracker-emoji {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    pointer-events: none;
+    transition: transform 0.1s linear, opacity 0.2s ease;
+    z-index: 2;
+    opacity: 0.8;
+}
+
+/* Emoji Animation */
+.emoji-icon {
+    display: inline-block;
+    transition: transform 0.2s ease-in-out;
+}
+
+.emoji-peek-anim {
+    animation: popBounce 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4) rotate(10deg); }
+    100% { transform: scale(1); }
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
     font-weight: 600;
-    transition: all 0.3s ease;
-    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    background-color: #6366f1;
     color: white;
     width: 100%;
 }
 
 .btn-primary:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    background-color: #4f46e5;
+    transform: translateY(-1px);
 }
 
 .btn-outline {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background: transparent;
+    border: 1px solid #6366f1;
+    color: #818cf8;
 }
 
 .btn-outline:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.1);
 }
 
-/* Utility classes */
-.hidden { display: none !important; }
-
+/* Dashboard Stats Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    width: 100%;
-    margin-top: 15px;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #0f172a;
+    padding: 1.5rem;
+    border-radius: 8px;
     text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.clickable-history {
-    transition: all 0.3s ease;
+/* Utility Classes */
+.hidden {
+    display: none !important;
 }
 
-.clickable-history:hover {
-    background: rgba(129, 140, 248, 0.1) !important;
-    transform: scale(1.01);
-}
-
-/* Toast Notification */
+/* Toast Popup Animation */
 .toast-notification {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    padding: 15px 25px;
-    background: #1e293b;
-    border-left: 5px solid #818cf8;
+    background: #6366f1;
     color: white;
+    padding: 12px 24px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.3s ease, transform 0.3s ease;
     z-index: 1000;
+}
+
+.toast-notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-notification.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
 }

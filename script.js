@@ -69,6 +69,29 @@ function updateTrackerPos(inputId, trackerId) {
     trackerSpan.style.transform = `translateX(${calculatedPos}px)`;
 }
 
+// Dynamic Working Link Generator for GitHub Pages & Local Host
+function copyCandidateLink() {
+    const liveUrl = window.location.href.split('#')[0];
+    const candidateRegLink = `${liveUrl}#register`;
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(candidateRegLink).then(() => {
+            showToast("✨ Candidate Registration Link Copied!");
+        }).catch(() => {
+            fallbackCopyText(candidateRegLink);
+        });
+    } else {
+        fallbackCopyText(candidateRegLink);
+    }
+}
+
+// Auto Direct Candidate to Registration Form via URL Hash
+window.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#register') {
+        showPage('register-page');
+    }
+});
+
 // Page Navigation
 function showPage(pageId) {
     document.getElementById('login-page').classList.add('hidden');
@@ -284,19 +307,7 @@ function handleLogout() {
     showPage('login-page');
 }
 
-// Copy Link
-function copyLink(urlToCopy) {
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(urlToCopy).then(() => {
-            showToast("✨ Link successfully copied to clipboard!");
-        }).catch(() => {
-            fallbackCopyText(urlToCopy);
-        });
-    } else {
-        fallbackCopyText(urlToCopy);
-    }
-}
-
+// Fallback Copy Function
 function fallbackCopyText(text) {
     const tempInput = document.createElement("input");
     tempInput.value = text;
@@ -307,7 +318,7 @@ function fallbackCopyText(text) {
     showToast("✨ Link successfully copied!");
 }
 
-// Glowing Toast Popup
+// Toast Popup
 function showToast(message) {
     const toast = document.getElementById("copyToast");
     if (!toast) return;

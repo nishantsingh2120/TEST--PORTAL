@@ -11,6 +11,7 @@ let activeExamTest = null;
 let pendingExamTestId = null;
 let examTimerInterval = null;
 let examTimeRemaining = 0;
+let examStartTimeStamp = null;
 
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
@@ -190,7 +191,7 @@ function renderAdminData() {
     }
 }
 
-// RENDER CANDIDATE EXCLUSIVE HISTORY
+// RENDER CANDIDATE EXCLUSIVE HISTORY WITH CLICKABLE CARDS
 function renderCandidateHistory() {
     if (!currentLoggedInUser) return;
 
@@ -208,19 +209,65 @@ function renderCandidateHistory() {
     } else {
         mySubmissions.forEach((sub, idx) => {
             const historyCard = document.createElement('div');
+            historyCard.className = "clickable-history";
             historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px;";
+            historyCard.onclick = () => viewSubmissionDetails(sub);
+
             historyCard.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <h4 style="color: #818cf8; margin: 0;">${sub.examTitle}</h4>
+                    <h4 style="color: #818cf8; margin: 0;">${sub.examTitle} ➔ (Tap to View Analysis)</h4>
                     <span style="color: #4ade80; font-weight: bold; font-size: 1.1rem;">Score: ${sub.score} / ${sub.totalMarks}</span>
                 </div>
-                <div style="font-size: 0.85rem; color: #94a3b8;">
-                    Attempted: ${sub.attemptedCount}/${sub.totalQuestions} Questions | Submitted On: ${sub.timestamp}
+                <div style="font-size: 0.85rem; color: #94a3b8; display: flex; justify-content: space-between;">
+                    <span>Attempted: ${sub.attemptedCount}/${sub.totalQuestions} Questions</span>
+                    <span>Time Taken: <b>${sub.timeTaken || 'N/A'}</b></span>
+                    <span>Submitted On: ${sub.timestamp}</span>
                 </div>
             `;
             historyContainer.appendChild(historyCard);
         });
     }
+}
+
+function viewSubmissionDetails(sub) {
+    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username}) - ${sub.examTitle}`;
+    document.getElementById('result-total-score').innerText = `${sub.score} / ${sub.totalMarks}`;
+    document.getElementById('result-summary-stats').innerText = `Attempted: ${sub.attemptedCount} | Unattempted: ${sub.totalQuestions - sub.attemptedCount} | Time Taken: ${sub.timeTaken || 'N/A'}`;
+
+    let breakdownHtml = "";
+    sub.detailedAnswers.forEach((ansObj, idx) => {
+        let cardClass = "";
+        let statusBadge = "";
+
+        if (!ansObj.isAttempted) {
+            cardClass = "not-attempted-card";
+            statusBadge = `<span style="color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 4px;">⚠️ NOT ATTEMPTED</span>`;
+        } else if (ansObj.isCorrect) {
+            cardClass = "correct-card";
+            statusBadge = `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${ansObj.marks})</span>`;
+        } else {
+            cardClass = "incorrect-card";
+            statusBadge = `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${ansObj.marks})</span>`;
+        }
+
+        breakdownHtml += `
+            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <strong>Q${idx + 1}. ${ansObj.questionText}</strong>
+                    ${statusBadge}
+                </div>
+                <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;">
+                    <strong>Your Answer:</strong> ${ansObj.isAttempted ? ansObj.candAnswer : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
+                </div>
+                <div style="font-size: 0.9rem; color: #4ade80; margin-top: 6px; background: rgba(74, 222, 128, 0.1); padding: 6px 10px; border-radius: 4px;">
+                    <strong>Correct Answer:</strong> ${ansObj.correctDisplay}
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
+    showPage('exam-result-page');
 }
 
 function copyDirectExamLink(testId) {
@@ -287,6 +334,7 @@ function startExamProcess(testId) {
     });
 
     examTimeRemaining = activeExamTest.duration * 60;
+    examStartTimeStamp = Date.now();
     runExamTimer();
 
     showPage('exam-attempt-page');
@@ -324,13 +372,19 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     if (event) event.preventDefault();
     clearInterval(examTimerInterval);
 
+    // Calculate time taken
+    const timeSpentSeconds = Math.floor((Date.now() - examStartTimeStamp) / 1000);
+    const timeTakenMin = Math.floor(timeSpentSeconds / 60);
+    const timeTakenSec = timeSpentSeconds % 60;
+    const timeTakenStr = `${timeTakenMin}m ${timeTakenSec}s`;
+
     const formData = new FormData(document.getElementById('candidateExamForm'));
 
     let totalMarks = 0;
     let scoredMarks = 0;
     let correctCount = 0;
-    let incorrectCount = 0;
     let unattemptedCount = 0;
+    let detailedAnswersList = [];
     let breakdownHtml = "";
 
     activeExamTest.questions.forEach((q, idx) => {
@@ -347,19 +401,26 @@ function submitCandidateExam(event, isAutoSubmit = false) {
                     isCorrect = true;
                     scoredMarks += q.marks;
                     correctCount++;
-                } else {
-                    incorrectCount++;
                 }
             } else if (q.type === 'oneword') {
                 if (q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
                     isCorrect = true;
                     scoredMarks += q.marks;
                     correctCount++;
-                } else {
-                    incorrectCount++;
                 }
             }
         }
+
+        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "Key answer specified by admin");
+
+        detailedAnswersList.push({
+            questionText: q.question,
+            marks: q.marks,
+            candAnswer: candAns,
+            isAttempted: isAttempted,
+            isCorrect: isCorrect,
+            correctDisplay: correctDisplay
+        });
 
         let cardClass = "";
         let statusBadge = "";
@@ -374,8 +435,6 @@ function submitCandidateExam(event, isAutoSubmit = false) {
             cardClass = "incorrect-card";
             statusBadge = `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${q.marks})</span>`;
         }
-
-        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "Key answer specified by admin");
 
         breakdownHtml += `
             <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03);">
@@ -402,15 +461,18 @@ function submitCandidateExam(event, isAutoSubmit = false) {
         totalMarks: totalMarks,
         attemptedCount: activeExamTest.questions.length - unattemptedCount,
         totalQuestions: activeExamTest.questions.length,
-        timestamp: new Date().toLocaleString()
+        timeTaken: timeTakenStr,
+        timestamp: new Date().toLocaleString(),
+        detailedAnswers: detailedAnswersList
     });
     localStorage.setItem('portal_submissions', JSON.stringify(examSubmissions));
 
     document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
     document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
-    document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Correct: ${correctCount}`;
+    document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Time Taken: ${timeTakenStr}`;
     document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
 
+    document.getElementById('main-navbar').style.display = 'flex';
     showPage('exam-result-page');
 }
 

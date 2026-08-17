@@ -2,13 +2,20 @@
 let isLoggedIn = false;
 let currentUserRole = "";
 
-// Dynamic Data Arrays (Initially EMPTY - No Dummy Users)
+// Dynamic Data Arrays (Initially Empty)
 let testsData = [];
-let candidatesData = [];
+let registeredCandidates = [];
+
+// FIXED ADMIN CREDENTIALS
+const ADMIN_CREDENTIALS = {
+    username: "Nishantsingh@21",
+    password: "Nikki812616"
+};
 
 // Page Navigation
 function showPage(pageId) {
     document.getElementById('login-page').classList.add('hidden');
+    document.getElementById('register-page').classList.add('hidden');
     document.getElementById('dashboard-page').classList.add('hidden');
 
     const activePage = document.getElementById(pageId);
@@ -27,26 +34,65 @@ function openDashboard() {
     showPage('dashboard-page');
 }
 
-// Handle Login
+// Candidate Registration Handler
+function handleCandidateRegister(event) {
+    event.preventDefault();
+    const fullname = document.getElementById('regFullname').value.trim();
+    const username = document.getElementById('regUsername').value.trim().toLowerCase();
+    const password = document.getElementById('regPassword').value;
+
+    // Check if username already exists
+    const exists = registeredCandidates.some(c => c.username === username);
+    if (exists) {
+        showToast("❌ Username already taken! Choose another.");
+        return;
+    }
+
+    // Save candidate registration
+    const newCandidate = {
+        id: `CAND-${100 + registeredCandidates.length + 1}`,
+        name: fullname,
+        username: username,
+        password: password,
+        status: "Active"
+    };
+
+    registeredCandidates.push(newCandidate);
+    document.getElementById('registerForm').reset();
+    showToast("✅ Registration successful! Please login.");
+    showPage('login-page');
+}
+
+// Handle Secure Login
 function handleLogin(event) {
     event.preventDefault();
     const role = document.getElementById('userRole').value;
-    const username = document.getElementById('username').value;
-    
-    isLoggedIn = true;
-    currentUserRole = role;
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
 
-    // Register active candidate automatically on login if candidate
+    // 1. Admin Verification Guard
+    if (role === 'admin') {
+        if (username !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
+            showToast("❌ Invalid Admin Username or Password!");
+            return;
+        }
+    } 
+
+    // 2. Candidate Verification Guard
     if (role === 'candidate') {
-        const existingCand = candidatesData.find(c => c.name.toLowerCase() === username.toLowerCase());
-        if (!existingCand) {
-            candidatesData.push({
-                id: `CAND-${100 + candidatesData.length + 1}`,
-                name: username,
-                status: "Active"
-            });
+        const foundCandidate = registeredCandidates.find(
+            c => c.username === username.toLowerCase() && c.password === password
+        );
+        
+        if (!foundCandidate) {
+            showToast("❌ Invalid Username or Password! Register first if new.");
+            return;
         }
     }
+
+    // Success Authentication
+    isLoggedIn = true;
+    currentUserRole = role;
 
     document.getElementById('welcome-text').innerText = `Welcome back, ${username} (${role.toUpperCase()})`;
 
@@ -63,17 +109,17 @@ function handleLogin(event) {
     }
 
     renderPortalData();
-    showToast(`Logged in successfully as ${role.toUpperCase()}`);
+    showToast(`✅ Logged in successfully as ${role.toUpperCase()}`);
     showPage('dashboard-page');
 }
 
 // Render Dynamic Stats & Modules
 function renderPortalData() {
     // 1. Render Stats dynamically
-    document.getElementById('stat-candidates').innerText = candidatesData.length;
+    document.getElementById('stat-candidates').innerText = registeredCandidates.length;
     document.getElementById('stat-tests').innerText = testsData.length;
 
-    // 2. Render Tests List (For Admin & Candidates)
+    // 2. Render Tests List
     const testContainer = document.getElementById('test-list-container');
     testContainer.innerHTML = '';
 
@@ -104,16 +150,17 @@ function renderPortalData() {
     const emptyMsg = document.getElementById('no-candidate-msg');
     tableBody.innerHTML = '';
 
-    if (candidatesData.length === 0) {
+    if (registeredCandidates.length === 0) {
         if (emptyMsg) emptyMsg.classList.remove('hidden');
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
-        candidatesData.forEach(cand => {
+        registeredCandidates.forEach(cand => {
             const row = document.createElement('tr');
             row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
             row.innerHTML = `
                 <td style="padding: 10px;">${cand.id}</td>
                 <td style="padding: 10px;">${cand.name}</td>
+                <td style="padding: 10px;">${cand.username}</td>
                 <td style="padding: 10px;"><span style="color: #4ade80;">● ${cand.status}</span></td>
             `;
             tableBody.appendChild(row);

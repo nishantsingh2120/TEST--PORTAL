@@ -20,7 +20,8 @@ const ADMIN_CREDENTIALS = {
 function showPage(pageId) {
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('register-page').classList.add('hidden');
-    document.getElementById('dashboard-page').classList.add('hidden');
+    document.getElementById('admin-dashboard-page').classList.add('hidden');
+    document.getElementById('candidate-dashboard-page').classList.add('hidden');
     document.getElementById('exam-attempt-page').classList.add('hidden');
     document.getElementById('exam-result-page').classList.add('hidden');
 
@@ -34,7 +35,14 @@ function openDashboard() {
         showPage('login-page');
         return;
     }
-    showPage('dashboard-page');
+
+    if (currentUserRole === 'admin') {
+        showPage('admin-dashboard-page');
+        renderAdminData();
+    } else {
+        showPage('candidate-dashboard-page');
+        renderCandidateHistory();
+    }
 }
 
 function toggleQuestionTypeInputs() {
@@ -124,11 +132,11 @@ function handleCreateTest(event) {
     document.getElementById('draft-questions-preview').innerText = '';
     document.getElementById('createTestForm').reset();
 
-    renderPortalData();
+    renderAdminData();
     showToast("✅ Exam Published Successfully!");
 }
 
-function renderPortalData() {
+function renderAdminData() {
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
     registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
     examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
@@ -161,7 +169,6 @@ function renderPortalData() {
         });
     }
 
-    // Render Submissions Table for Admin
     const subTableBody = document.getElementById('submissions-table-body');
     subTableBody.innerHTML = '';
     
@@ -183,6 +190,39 @@ function renderPortalData() {
     }
 }
 
+// RENDER CANDIDATE EXCLUSIVE HISTORY
+function renderCandidateHistory() {
+    if (!currentLoggedInUser) return;
+
+    document.getElementById('cand-profile-name').innerText = currentLoggedInUser.name;
+    document.getElementById('cand-profile-username').innerText = `Username ID: ${currentLoggedInUser.username}`;
+
+    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
+    const mySubmissions = examSubmissions.filter(s => s.candidateUsername.toLowerCase() === currentLoggedInUser.username.toLowerCase());
+
+    const historyContainer = document.getElementById('candidate-history-container');
+    historyContainer.innerHTML = '';
+
+    if (mySubmissions.length === 0) {
+        historyContainer.innerHTML = '<p style="color: #94a3b8; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">You have not attempted any exams yet. Open a shared exam link to take a test.</p>';
+    } else {
+        mySubmissions.forEach((sub, idx) => {
+            const historyCard = document.createElement('div');
+            historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px;";
+            historyCard.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #818cf8; margin: 0;">${sub.examTitle}</h4>
+                    <span style="color: #4ade80; font-weight: bold; font-size: 1.1rem;">Score: ${sub.score} / ${sub.totalMarks}</span>
+                </div>
+                <div style="font-size: 0.85rem; color: #94a3b8;">
+                    Attempted: ${sub.attemptedCount}/${sub.totalQuestions} Questions | Submitted On: ${sub.timestamp}
+                </div>
+            `;
+            historyContainer.appendChild(historyCard);
+        });
+    }
+}
+
 function copyDirectExamLink(testId) {
     const liveUrl = window.location.href.split('#')[0];
     const directExamLink = `${liveUrl}#take-test=${testId}`;
@@ -196,7 +236,6 @@ function copyDirectExamLink(testId) {
     }
 }
 
-// START EXAM WITH COUNTDOWN TIMER
 function startExamProcess(testId) {
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
     activeExamTest = testsData.find(t => t.id === testId);
@@ -247,7 +286,6 @@ function startExamProcess(testId) {
         qContainer.appendChild(qCard);
     });
 
-    // Initialize Timer
     examTimeRemaining = activeExamTest.duration * 60;
     runExamTimer();
 
@@ -270,7 +308,6 @@ function runExamTimer() {
 
         timerDisplay.innerText = `⏱️ ${displayMin}:${displaySec}`;
 
-        // Red and Pop animation in last 20 Seconds
         if (examTimeRemaining <= 20) {
             timerDisplay.classList.add('timer-warning');
         }
@@ -283,7 +320,6 @@ function runExamTimer() {
     }, 1000);
 }
 
-// SUBMIT EXAM & SHOW DETAILED RESULT
 function submitCandidateExam(event, isAutoSubmit = false) {
     if (event) event.preventDefault();
     clearInterval(examTimerInterval);
@@ -357,7 +393,6 @@ function submitCandidateExam(event, isAutoSubmit = false) {
         `;
     });
 
-    // Save Submission Record for Admin
     examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
     examSubmissions.push({
         candidateName: currentLoggedInUser.name,
@@ -379,7 +414,6 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     showPage('exam-result-page');
 }
 
-// LOGIN SYSTEM
 function handleLogin(event) {
     if (event) event.preventDefault();
     const role = document.getElementById('userRole').value;
@@ -405,21 +439,19 @@ function handleLogin(event) {
     isLoggedIn = true;
     currentUserRole = role;
 
-    // Check if coming via shared exam link
     if (role === 'candidate' && pendingExamTestId) {
         startExamProcess(pendingExamTestId);
         pendingExamTestId = null;
         return;
     }
 
-    document.getElementById('welcome-text').innerText = `Welcome back, ${currentLoggedInUser.name}`;
-    
     if (role === 'admin') {
-        document.getElementById('admin-test-section').classList.remove('hidden');
-        document.getElementById('admin-submissions-section').classList.remove('hidden');
+        showPage('admin-dashboard-page');
+        renderAdminData();
+    } else {
+        showPage('candidate-dashboard-page');
+        renderCandidateHistory();
     }
-    renderPortalData();
-    showPage('dashboard-page');
 }
 
 function handleCandidateRegister(event) {
@@ -441,13 +473,14 @@ function handleCandidateRegister(event) {
 function handleLogout() {
     isLoggedIn = false;
     currentLoggedInUser = null;
+    document.getElementById('main-navbar').style.display = 'flex';
     showPage('login-page');
 }
 
 function deleteTest(testId) {
     testsData = testsData.filter(t => t.id !== testId);
     localStorage.setItem('portal_tests', JSON.stringify(testsData));
-    renderPortalData();
+    renderAdminData();
     showToast("🗑️ Test deleted!");
 }
 

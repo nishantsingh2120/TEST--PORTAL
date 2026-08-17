@@ -8,7 +8,7 @@
 </head>
 <body>
 
-    <!-- Header / Navbar Fix -->
+    <!-- Header / Navbar -->
     <header class="navbar">
         <div class="brand-logo">Portal App</div>
         <nav class="nav-links">
@@ -34,7 +34,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="username">Username / Candidate ID</label>
+                        <label for="username">Username / ID</label>
                         <input type="text" id="username" placeholder="Enter ID" required>
                     </div>
 
@@ -49,7 +49,9 @@
         </section>
 
         <!-- DASHBOARD PAGE VIEW -->
-        <section id="dashboard-page" class="hidden">
+        <section id="dashboard-page" class="hidden" style="width: 100%;">
+            
+            <!-- Dashboard Overview Card -->
             <div class="card">
                 <h2>Dashboard Overview</h2>
                 <p id="welcome-text">Welcome back!</p>
@@ -58,15 +60,14 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <h3>Active Candidates</h3>
-                        <p id="stat-candidates">0</p>
+                        <p id="stat-candidates" style="font-size: 2rem; font-weight: bold; color: #818cf8;">0</p>
                     </div>
                     <div class="stat-card">
                         <h3>Active Tests</h3>
-                        <p id="stat-tests">0</p>
+                        <p id="stat-tests" style="font-size: 2rem; font-weight: bold; color: #818cf8;">0</p>
                     </div>
                 </div>
 
-                <!-- Copy Link Section -->
                 <div class="form-group" style="align-items: center; width: 100%;">
                     <label>Share Candidate Registration Link</label>
                     <button class="btn btn-primary" onclick="copyLink('https://yourportal.com/candidate-register')">
@@ -77,13 +78,57 @@
                 <br>
                 <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
             </div>
+
+            <!-- ADMIN ONLY: CREATE TEST SECTION -->
+            <div id="admin-test-section" class="card hidden">
+                <h2>Set & Create New Test</h2>
+                <form id="createTestForm" onsubmit="handleCreateTest(event)">
+                    <div class="form-group">
+                        <label for="testTitle">Test Title</label>
+                        <input type="text" id="testTitle" placeholder="e.g. Mathematics Final Exam" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="testDuration">Duration (in minutes)</label>
+                        <input type="number" id="testDuration" placeholder="e.g. 60" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Publish Test</button>
+                </form>
+
+                <br>
+                <h3 style="text-align: left; margin-bottom: 12px;">Active Test List</h3>
+                <div id="test-list-container">
+                    <!-- Dynamic Tests Inserted Here -->
+                </div>
+            </div>
+
+            <!-- CANDIDATES DIRECTORY TABLE -->
+            <div id="candidates-directory-section" class="card hidden">
+                <h2 style="text-align: left;">Candidate Directory</h2>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: #818cf8;">
+                                <th style="padding: 10px;">ID</th>
+                                <th style="padding: 10px;">Candidate Name</th>
+                                <th style="padding: 10px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidate-table-body">
+                            <!-- Dynamic Candidate Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </section>
 
     </main>
 
     <!-- Toast Notification Popup -->
     <div id="copyToast" class="toast-notification hidden">
-        ✨ Link successfully copied to clipboard!
+        ✨ Notification
     </div>
 
     <script src="script.js"></script>

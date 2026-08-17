@@ -35,7 +35,7 @@
 
                     <div class="form-group">
                         <label for="username">Username / ID</label>
-                        <input type="text" id="username" placeholder="Enter ID" required>
+                        <input type="text" id="username" placeholder="Enter username" required>
                     </div>
 
                     <div class="form-group">
@@ -45,6 +45,44 @@
 
                     <button type="submit" class="btn btn-primary">Login Now</button>
                 </form>
+
+                <br>
+                <div id="register-prompt" style="text-align: center;">
+                    <p style="font-size: 0.85rem;">New Candidate? <a href="#" onclick="showPage('register-page')" style="color: #818cf8; font-weight: 600;">Register Here</a></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CANDIDATE REGISTRATION PAGE VIEW -->
+        <section id="register-page" class="login-container hidden">
+            <div class="card">
+                <h2>Candidate Registration</h2>
+                <p style="margin-bottom: 15px; color: #94a3b8; font-size: 0.9rem;">Create your candidate account to access tests</p>
+
+                <form id="registerForm" onsubmit="handleCandidateRegister(event)">
+                    
+                    <div class="form-group">
+                        <label for="regFullname">Full Name</label>
+                        <input type="text" id="regFullname" placeholder="Enter full name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regUsername">Choose Username</label>
+                        <input type="text" id="regUsername" placeholder="Choose a unique username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regPassword">Set Password</label>
+                        <input type="password" id="regPassword" placeholder="Set password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Register Account</button>
+                </form>
+
+                <br>
+                <div style="text-align: center;">
+                    <p style="font-size: 0.85rem;">Already registered? <a href="#" onclick="showPage('login-page')" style="color: #818cf8; font-weight: 600;">Back to Login</a></p>
+                </div>
             </div>
         </section>
 
@@ -106,12 +144,15 @@
             <!-- CANDIDATES DIRECTORY TABLE -->
             <div id="candidates-directory-section" class="card hidden">
                 <h2 style="text-align: left;">Candidate Directory</h2>
+                <p id="no-candidate-msg" style="text-align: left; margin-top: 10px; color: #94a3b8;">No candidates registered yet.</p>
+                
                 <div style="overflow-x: auto; width: 100%;">
                     <table style="width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left;">
                         <thead>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: #818cf8;">
                                 <th style="padding: 10px;">ID</th>
                                 <th style="padding: 10px;">Candidate Name</th>
+                                <th style="padding: 10px;">Username</th>
                                 <th style="padding: 10px;">Status</th>
                             </tr>
                         </thead>

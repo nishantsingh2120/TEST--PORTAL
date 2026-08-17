@@ -125,6 +125,38 @@
 
         <!-- ADMIN EXCLUSIVE DASHBOARD -->
         <section id="admin-dashboard-page" class="hidden" style="width: 100%;">
+        <!-- BULK QUESTIONS IMPORT CARD -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3 style="color: #818cf8; margin-bottom: 0.5rem;">⚡ Bulk Questions Import (Smart Parser)</h3>
+    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem;">
+        Paste multiple questions at once using the format shown below:
+    </p>
+    
+    <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 6px; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 1rem;">
+        <code>
+            Q1. What is the capital of India?<br>
+            A) New Delhi<br>
+            B) Mumbai<br>
+            C) Kolkata<br>
+            D) Chennai<br>
+            Ans: A<br>
+            Marks: 1
+        </code>
+    </div>
+
+    <div class="form-group">
+        <label for="bulkQuestionsInput">Paste Questions Text Here:</label>
+        <textarea id="bulkQuestionsInput" rows="7" placeholder="Paste your formatted questions here..."></textarea>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+        <button type="button" class="btn btn-primary" onclick="previewBulkEntries()">🔍 Preview Parsed Questions</button>
+        <button type="button" id="confirmBulkBtn" class="btn btn-outline hidden" style="border-color: #4ade80; color: #4ade80;" onclick="confirmAddBulkToExam()">✅ Add Questions to Current Exam</button>
+    </div>
+
+    <!-- Live Preview Container -->
+    <div id="bulk-preview-container"></div>
+</div>
             <div class="card">
                 <h2>Admin Dashboard Overview</h2>
                 <p id="admin-welcome-text">Welcome back, Admin!</p>

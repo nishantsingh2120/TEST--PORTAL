@@ -3,300 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exam Portal App</title>
+    <title>Smart Exam & Question Manager</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .timer-box {
-            position: sticky;
-            top: 10px;
-            z-index: 100;
-            background: #1e293b;
-            border: 2px solid #818cf8;
-            padding: 10px 20px;
-            border-radius: 30px;
-            display: inline-block;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #38bdf8;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-        }
-        .timer-warning {
-            color: #ef4444 !important;
-            border-color: #ef4444 !important;
-            animation: popZoom 0.5s infinite alternate;
-        }
-        @keyframes popZoom {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.15); }
-        }
-        .not-attempted-card {
-            border: 2px solid #ef4444 !important;
-            background: rgba(239, 68, 68, 0.08) !important;
-        }
-        .correct-card { border-left: 5px solid #4ade80 !important; }
-        .incorrect-card { border-left: 5px solid #f87171 !important; }
-        .clickable-history {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .clickable-history:hover {
-            border-color: #818cf8 !important;
-            background: rgba(129, 140, 248, 0.05) !important;
-        }
-    </style>
 </head>
 <body>
 
-    <!-- Header / Navbar -->
-    <header class="navbar" id="main-navbar">
-        <div class="brand-logo">Portal App</div>
-        <nav class="nav-links">
-            <button class="btn btn-outline nav-btn" id="nav-login" onclick="showPage('login-page')">Login</button>
-            <button class="btn btn-outline nav-btn" id="nav-dash" onclick="openDashboard()">Dashboard</button>
-        </nav>
-    </header>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="brand-logo">✨ Smart Exam Manager</div>
+        <div class="nav-links">
+            <button class="btn btn-outline" onclick="showSection('dashboardSection')">Dashboard</button>
+            <button class="btn btn-outline" onclick="showSection('importSection')">Bulk Import</button>
+        </div>
+    </nav>
 
-    <main class="container">
-        
-        <!-- LOGIN PAGE VIEW -->
-        <section id="login-page" class="login-container">
-            <div class="card">
-                <h2>Portal Login</h2>
-                <form id="loginForm" onsubmit="handleLogin(event); return false;">
-                    <div class="form-group">
-                        <label for="userRole">Select Login Type</label>
-                        <select id="userRole" required>
-                            <option value="admin">Admin Login</option>
-                            <option value="candidate">Candidate Login</option>
-                        </select>
-                    </div>
+    <!-- Main Container -->
+    <div class="container">
 
-                    <div class="form-group">
-                        <label for="username">Username / ID</label>
-                        <input type="text" id="username" placeholder="Enter username" required autocomplete="off">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="password" placeholder="Enter password" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji')">
-                                <span id="login-pwd-emoji" class="emoji-icon">🙈</span>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Login Now</button>
-                </form>
-                <br>
-                <div id="register-prompt" style="text-align: center;">
-                    <p style="font-size: 0.85rem;">New Candidate? <a href="#" onclick="showPage('register-page')" style="color: #818cf8; font-weight: 600;">Register Here</a></p>
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="card">
+            <h2>📊 Dashboard Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Questions</h3>
+                    <p id="totalCount">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Auto-Parsed Categories</h3>
+                    <p>MCQ / Short / Long</p>
                 </div>
             </div>
-        </section>
+            <p>Welcome! Use the Bulk Import tab to paste your mixed format question paper and let the system auto-organize everything.</p>
+        </div>
 
-        <!-- CANDIDATE REGISTRATION PAGE VIEW -->
-        <section id="register-page" class="login-container hidden">
-            <div class="card">
-                <h2>Candidate Registration</h2>
-                <form id="registerForm" onsubmit="handleCandidateRegister(event); return false;">
-                    <div class="form-group">
-                        <label for="regFullname">Full Name</label>
-                        <input type="text" id="regFullname" placeholder="Enter full name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="regUsername">Choose Username</label>
-                        <input type="text" id="regUsername" placeholder="Choose a unique username" required autocomplete="off">
-                    </div>
-                    <div class="form-group">
-                        <label for="regPassword">Set Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="regPassword" placeholder="Set password" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword', 'reg-pwd-emoji')">
-                                <span id="reg-pwd-emoji" class="emoji-icon">🙈</span>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Register Account</button>
-                </form>
+        <!-- Bulk Import Section (Smart Auto-Parser) -->
+        <div id="importSection" class="card hidden">
+            <h3>📥 Import Mixed Question Paper</h3>
+            <div class="form-group">
+                <label>Yahan apna poora mix text paste karein (MCQs, One-word, Short, Long sab ek sath):</label>
+                <textarea id="bulkQuestionInput" rows="8" placeholder="SECTION A&#10;1. What is the capital of France?&#10;a) London&#10;b) Paris&#10;Answer: b&#10;&#10;2. Define OOP."></textarea>
             </div>
-        </section>
+            <button class="btn btn-primary" onclick="handleBulkImport()">Auto-Process & Categorize 🚀</button>
+        </div>
 
-        <!-- ADMIN EXCLUSIVE DASHBOARD -->
-        <section id="admin-dashboard-page" class="hidden" style="width: 100%;">
-            <div class="card">
-                <h2>Admin Dashboard Overview</h2>
-                <p id="admin-welcome-text">Welcome back, Admin!</p>
-                <br>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Registered Candidates</h3>
-                        <p id="stat-candidates" style="font-size: 2rem; font-weight: bold; color: #818cf8;">0</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Active Exams</h3>
-                        <p id="stat-tests" style="font-size: 2rem; font-weight: bold; color: #818cf8;">0</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Submitted Papers</h3>
-                        <p id="stat-submissions" style="font-size: 2rem; font-weight: bold; color: #4ade80;">0</p>
-                    </div>
-                </div>
-                <br>
-                <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
-            </div>
+        <!-- Display Parsed Results Section -->
+        <div id="resultSection" class="card hidden">
+            <h3>📋 Successfully Processed Questions</h3>
+            <div id="parsedOutputList" style="text-align: left; margin-top: 15px;"></div>
+        </div>
 
-            <!-- CREATE MULTI-PATTERN TEST -->
-            <div class="card">
-                <h2>Set Exam Paper</h2>
-                <form id="createTestForm" onsubmit="handleCreateTest(event); return false;">
-                    <div class="form-group">
-                        <label for="testTitle">Exam / Test Title</label>
-                        <input type="text" id="testTitle" placeholder="e.g. Science Mid-Term Exam" required>
-                    </div>
+    </div>
 
-                    <div class="form-group">
-                        <label for="testDuration">Duration (in minutes)</label>
-                        <input type="number" id="testDuration" placeholder="e.g. 1" required>
-                    </div>
-
-                    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; padding-top: 15px;">
-                        <h3 style="text-align: left; margin-bottom: 12px; color: #818cf8;">Add Question to Exam</h3>
-                        
-                        <div class="form-group">
-                            <label for="qType">Select Question Type</label>
-                            <select id="qType" onchange="toggleQuestionTypeInputs()">
-                                <option value="mcq">MCQ (Multiple Choice)</option>
-                                <option value="oneword">One Word Answer</option>
-                                <option value="short">Short Answer Question</option>
-                                <option value="long">Long Answer Question</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="qText">Question Statement</label>
-                            <input type="text" id="qText" placeholder="Enter question statement">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="qMarks">Marks</label>
-                            <input type="number" id="qMarks" value="1" min="1">
-                        </div>
-
-                        <div id="mcq-options-wrapper">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="form-group"><label>Option A</label><input type="text" id="optA" placeholder="Option A"></div>
-                                <div class="form-group"><label>Option B</label><input type="text" id="optB" placeholder="Option B"></div>
-                                <div class="form-group"><label>Option C</label><input type="text" id="optC" placeholder="Option C"></div>
-                                <div class="form-group"><label>Option D</label><input type="text" id="optD" placeholder="Option D"></div>
-                            </div>
-                            <div class="form-group">
-                                <label for="correctOpt">Correct Option</label>
-                                <select id="correctOpt">
-                                    <option value="A">Option A</option>
-                                    <option value="B">Option B</option>
-                                    <option value="C">Option C</option>
-                                    <option value="D">Option D</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="non-mcq-answer-wrapper" class="hidden">
-                            <div class="form-group">
-                                <label for="textCorrectAns">Expected Answer / Key</label>
-                                <input type="text" id="textCorrectAns" placeholder="Enter correct key answer">
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn btn-outline" style="margin-bottom: 15px; width: 100%; border-color: #818cf8; color: #818cf8;" onclick="addQuestionToCurrentBatch()">➕ Add Question to Paper</button>
-                        <div id="draft-questions-preview" style="text-align: left; font-size: 0.85rem; color: #4ade80; margin-bottom: 15px;"></div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary">Publish Exam Paper</button>
-                </form>
-
-                <br>
-                <h3 style="text-align: left; margin-bottom: 12px;">Active Exams & Direct Share Links</h3>
-                <div id="test-list-container"></div>
-            </div>
-
-            <!-- CANDIDATES SUBMISSIONS AUDIT -->
-            <div class="card">
-                <h2 style="text-align: left;">Candidate Exam Submissions Report</h2>
-                <p style="color: #94a3b8; font-size: 0.85rem;">(Tap on any candidate name to view full audit report)</p>
-                <div style="overflow-x: auto; width: 100%; margin-top: 15px;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead>
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: #818cf8;">
-                                <th style="padding: 10px;">Candidate Name</th>
-                                <th style="padding: 10px;">Exam Title</th>
-                                <th style="padding: 10px;">Score</th>
-                                <th style="padding: 10px;">Time Taken</th>
-                            </tr>
-                        </thead>
-                        <tbody id="submissions-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- CANDIDATE EXCLUSIVE PROFILE / HISTORY DASHBOARD -->
-        <section id="candidate-dashboard-page" class="hidden" style="width: 100%; max-width: 800px; margin: 0 auto;">
-            <div class="card" style="text-align: left;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h2 id="cand-profile-name" style="color: #818cf8; margin-bottom: 2px;">Candidate Name</h2>
-                        <p id="cand-profile-username" style="color: #94a3b8; font-size: 0.9rem;">Username: -</p>
-                    </div>
-                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
-
-                <h3 style="margin-bottom: 15px; color: #cbd5e1;">Your Exam History & Performance Reports (Tap any test to view details)</h3>
-                <div id="candidate-history-container"></div>
-            </div>
-        </section>
-
-        <!-- EXAM ATTEMPT PAGE -->
-        <section id="exam-attempt-page" class="hidden" style="width: 100%; max-width: 750px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <div id="exam-timer-display" class="timer-box">⏱️ 00:00</div>
-            </div>
-
-            <div class="card" style="text-align: left;">
-                <h1 id="exam-paper-title" style="color: #818cf8; margin-bottom: 5px;">Exam Title</h1>
-                <p id="exam-paper-info" style="color: #94a3b8; font-size: 0.9rem;"></p>
-                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
-
-                <form id="candidateExamForm" onsubmit="submitCandidateExam(event); return false;">
-                    <div id="exam-questions-container"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 15px;">Submit Exam Paper 🚀</button>
-                </form>
-            </div>
-        </section>
-
-        <!-- EXAM RESULT / AUDIT REPORT VIEW -->
-        <section id="exam-result-page" class="hidden" style="width: 100%; max-width: 750px; margin: 0 auto;">
-            <div class="card" style="text-align: left;">
-                <h2 style="color: #4ade80; text-align: center; margin-bottom: 5px;">📋 Exam Audit & Performance Report</h2>
-                <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Detailed question-by-question candidate analysis:</p>
-
-                <div style="background: rgba(129, 140, 248, 0.1); border: 1px solid #818cf8; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 25px;">
-                    <h3 id="result-cand-name" style="margin-bottom: 5px;">Student Name</h3>
-                    <div style="font-size: 2.5rem; font-weight: bold; color: #818cf8; margin: 10px 0;" id="result-total-score">0 / 0</div>
-                    <p id="result-summary-stats" style="font-size: 0.9rem; color: #cbd5e1;"></p>
-                </div>
-
-                <h3>Detailed Question Analysis</h3>
-                <br>
-                <div id="result-questions-breakdown"></div>
-            </div>
-        </section>
-
-    </main>
-
-    <div id="copyToast" class="toast-notification hidden">✨ Notification</div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-notification hidden">Action completed successfully!</div>
 
     <script src="script.js"></script>
 </body>

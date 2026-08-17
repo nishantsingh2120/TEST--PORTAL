@@ -23,7 +23,7 @@
         <section id="login-page" class="login-container">
             <div class="card">
                 <h2>Portal Login</h2>
-                <form id="loginForm" onsubmit="handleLogin(event)">
+                <form id="loginForm" onsubmit="handleLogin(event); return false;">
                     
                     <div class="form-group">
                         <label for="userRole">Select Login Type</label>
@@ -35,18 +35,15 @@
 
                     <div class="form-group">
                         <label for="username">Username / ID</label>
-                        <input type="text" id="username" placeholder="Enter username" required>
+                        <input type="text" id="username" placeholder="Enter username" required autocomplete="off">
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-wrapper">
-                            <!-- Floating Caret Tracker Emoji -->
                             <span id="login-tracker-emoji" class="tracker-emoji hidden">🐵</span>
-                            
                             <input type="password" id="password" placeholder="Enter password" required oninput="updateTrackerPos('password', 'login-tracker-emoji')">
                             
-                            <!-- Static Toggle Button -->
                             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji', 'login-tracker-emoji')" title="Toggle Password Visibility">
                                 <span id="login-pwd-emoji" class="emoji-icon">🙈</span>
                             </button>
@@ -69,7 +66,7 @@
                 <h2>Candidate Registration</h2>
                 <p style="margin-bottom: 15px; color: #94a3b8; font-size: 0.9rem;">Create your candidate account to access tests</p>
 
-                <form id="registerForm" onsubmit="handleCandidateRegister(event)">
+                <form id="registerForm" onsubmit="handleCandidateRegister(event); return false;">
                     
                     <div class="form-group">
                         <label for="regFullname">Full Name</label>
@@ -78,14 +75,13 @@
 
                     <div class="form-group">
                         <label for="regUsername">Choose Username</label>
-                        <input type="text" id="regUsername" placeholder="Choose a unique username" required>
+                        <input type="text" id="regUsername" placeholder="Choose a unique username" required autocomplete="off">
                     </div>
 
                     <div class="form-group">
                         <label for="regPassword">Set Password</label>
                         <div class="password-wrapper">
                             <span id="reg-tracker-emoji" class="tracker-emoji hidden">🐵</span>
-
                             <input type="password" id="regPassword" placeholder="Set password" required oninput="updateTrackerPos('regPassword', 'reg-tracker-emoji')">
                             
                             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword', 'reg-pwd-emoji', 'reg-tracker-emoji')" title="Toggle Password Visibility">
@@ -136,7 +132,7 @@
             <!-- ADMIN ONLY: CREATE TEST & ADD QUESTIONS SECTION -->
             <div id="admin-test-section" class="card hidden">
                 <h2>Set & Create New Test</h2>
-                <form id="createTestForm" onsubmit="handleCreateTest(event)">
+                <form id="createTestForm" onsubmit="handleCreateTest(event); return false;">
                     <div class="form-group">
                         <label for="testTitle">Test Title</label>
                         <input type="text" id="testTitle" placeholder="e.g. Mathematics Final Exam" required>
@@ -222,10 +218,8 @@
 
     </main>
 
-    <!-- Canvas Helper for Caret Tracking -->
     <canvas id="textWidthCanvas" style="display:none;"></canvas>
 
-    <!-- Toast Notification Popup -->
     <div id="copyToast" class="toast-notification hidden">
         ✨ Notification
     </div>

@@ -1,3 +1,41 @@
+// Toggle Password Visibility
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+    } else {
+        passwordInput.type = 'password';
+    }
+}
+
+// Handle Login Submission
+function handleLogin(event) {
+    event.preventDefault();
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+
+    if (user && pass) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('navbar').classList.remove('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
+        showToast("Login Successful! Welcome back.");
+    } else {
+        alert("Please enter credentials!");
+    }
+}
+
+// Handle Logout
+function handleLogout() {
+    document.getElementById('navbar').classList.add('hidden');
+    document.getElementById('dashboardSection').classList.add('hidden');
+    document.getElementById('importSection').classList.add('hidden');
+    document.getElementById('resultSection').classList.add('hidden');
+    
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('loginForm').reset();
+    showToast("Logged out successfully.");
+}
+
 // Navigation Switcher
 function showSection(sectionId) {
     document.getElementById('dashboardSection').classList.add('hidden');

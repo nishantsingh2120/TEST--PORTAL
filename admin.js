@@ -71,12 +71,20 @@ async function handleAdminLogin(e) {
             console.log("Login successful:", data);
             if (typeof showToast === "function") showToast("Authenticated successfully!", "success");
             
+            // 1. Navigation Buttons Update
             const navBtn = document.getElementById('nav-admin-login-btn');
             const logoutBtn = document.getElementById('logout-btn');
             
             if (navBtn) navBtn.classList.add('hidden');
             if (logoutBtn) logoutBtn.classList.remove('hidden');
             
+            // 2. Hide Login Section Explicitly
+            const loginView = document.getElementById('view-admin-login');
+            if (loginView) {
+                loginView.classList.add('hidden');
+            }
+
+            // 3. Show Dashboard & Load Data
             showView('view-admin-dashboard');
             loadAdminDashboardData();
         }
@@ -199,7 +207,7 @@ async function saveTestConfiguration(e) {
     const duration = parseInt(document.getElementById('test-duration').value, 10);
     const description = document.getElementById('test-description').value;
     
-    // Proper Boolean mapping
+    // Explicit Boolean mapping
     const negativeMarking = Boolean(document.getElementById('test-negative-marking').checked);
     const isPublished = Boolean(document.getElementById('test-is-published').checked);
 

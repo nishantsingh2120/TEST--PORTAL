@@ -4,84 +4,19 @@ let currentUserRole = "";
 let testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
 let registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 let tempQuestionsBatch = [];
+let activeExamTest = null;
 
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
     password: "Nikki812616"
 };
 
-function togglePasswordVisibility(inputId, emojiId, trackerId) {
-    const inputField = document.getElementById(inputId);
-    const emojiSpan = document.getElementById(emojiId);
-    const trackerSpan = document.getElementById(trackerId);
-
-    if (!inputField || !emojiSpan) return;
-
-    if (inputField.type === "password") {
-        inputField.type = "text";
-        emojiSpan.innerText = "🐵";
-        emojiSpan.classList.add("emoji-peek-anim");
-
-        if (trackerSpan) {
-            trackerSpan.classList.remove("hidden");
-            updateTrackerPos(inputId, trackerId);
-        }
-    } else {
-        inputField.type = "password";
-        emojiSpan.innerText = "🙈";
-        emojiSpan.classList.add("emoji-peek-anim");
-
-        if (trackerSpan) {
-            trackerSpan.classList.add("hidden");
-        }
-    }
-
-    setTimeout(() => {
-        emojiSpan.classList.remove("emoji-peek-anim");
-    }, 300);
-}
-
-function updateTrackerPos(inputId, trackerId) {
-    const inputField = document.getElementById(inputId);
-    const trackerSpan = document.getElementById(trackerId);
-
-    if (!inputField || !trackerSpan || trackerSpan.classList.contains("hidden")) return;
-
-    const text = inputField.value;
-    const font = window.getComputedStyle(inputField).font;
-
-    const canvas = document.getElementById("textWidthCanvas") || document.createElement("canvas");
-    const context = canvas.getContext("2d");
-    context.font = font;
-
-    const textWidth = context.measureText(text).width;
-    
-    const paddingLeft = 16; 
-    const maxOffset = inputField.clientWidth - 70;
-    const calculatedPos = Math.min(paddingLeft + textWidth, maxOffset);
-
-    trackerSpan.style.transform = `translateX(${calculatedPos}px)`;
-}
-
-function copyCandidateLink() {
-    const liveUrl = window.location.href.split('#')[0];
-    const candidateRegLink = `${liveUrl}#register`;
-
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(candidateRegLink).then(() => {
-            showToast("✨ Candidate Registration Link Copied!");
-        }).catch(() => {
-            fallbackCopyText(candidateRegLink);
-        });
-    } else {
-        fallbackCopyText(candidateRegLink);
-    }
-}
-
 function showPage(pageId) {
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('register-page').classList.add('hidden');
     document.getElementById('dashboard-page').classList.add('hidden');
+    document.getElementById('exam-attempt-page').classList.add('hidden');
+    document.getElementById('exam-result-page').classList.add('hidden');
 
     const activePage = document.getElementById(pageId);
     if (activePage) {
@@ -98,143 +33,85 @@ function openDashboard() {
     showPage('dashboard-page');
 }
 
-// CANDIDATE REGISTRATION HANDLER
-function handleCandidateRegister(event) {
-    if (event) event.preventDefault();
+// TOGGLE QUESTION TYPE FIELDS IN ADMIN
+function toggleQuestionTypeInputs() {
+    const qType = document.getElementById('qType').value;
+    const mcqWrapper = document.getElementById('mcq-options-wrapper');
+    const nonMcqWrapper = document.getElementById('non-mcq-answer-wrapper');
 
-    const fullname = document.getElementById('regFullname').value.trim();
-    const usernameInput = document.getElementById('regUsername').value.trim();
-    const passwordInput = document.getElementById('regPassword').value.trim();
+    if (qType === 'mcq') {
+        mcqWrapper.classList.remove('hidden');
+        nonMcqWrapper.classList.add('hidden');
+    } else {
+        mcqWrapper.classList.add('hidden');
+        nonMcqWrapper.classList.remove('hidden');
+    }
+}
 
-    if (!fullname || !usernameInput || !passwordInput) {
-        showToast("⚠️ Please fill all fields!");
+// ADD QUESTION TO BATCH
+function addQuestionToCurrentBatch() {
+    const qType = document.getElementById('qType').value;
+    const qText = document.getElementById('qText').value.trim();
+    const qMarks = parseInt(document.getElementById('qMarks').value) || 1;
+
+    if (!qText) {
+        showToast("⚠️ Question statement is required!");
         return;
     }
 
-    // Direct LocalStorage Pull
-    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
-
-    const usernameLower = usernameInput.toLowerCase();
-    const exists = registeredCandidates.some(c => c.username.toLowerCase() === usernameLower);
-
-    if (exists) {
-        showToast("❌ Username already taken! Choose another.");
-        return;
-    }
-
-    const newCandidate = {
-        id: `CAND-${100 + registeredCandidates.length + 1}`,
-        name: fullname,
-        username: usernameInput, // Stores original casing
-        password: passwordInput,
-        status: "Active"
+    let questionObj = {
+        id: Date.now(),
+        type: qType,
+        question: qText,
+        marks: qMarks
     };
 
-    registeredCandidates.push(newCandidate);
-    localStorage.setItem('portal_candidates', JSON.stringify(registeredCandidates));
+    if (qType === 'mcq') {
+        const optA = document.getElementById('optA').value.trim();
+        const optB = document.getElementById('optB').value.trim();
+        const optC = document.getElementById('optC').value.trim();
+        const optD = document.getElementById('optD').value.trim();
+        const correctOpt = document.getElementById('correctOpt').value;
 
-    document.getElementById('registerForm').reset();
-    showToast("✅ Registration successful! Directing to Login...");
-
-    // Auto set candidate dropdown and prefill username in Login screen
-    document.getElementById('userRole').value = 'candidate';
-    document.getElementById('username').value = usernameInput;
-    document.getElementById('password').value = '';
-
-    showPage('login-page');
-}
-
-// SECURE LOGIN HANDLER
-function handleLogin(event) {
-    if (event) event.preventDefault();
-
-    const role = document.getElementById('userRole').value;
-    const usernameInput = document.getElementById('username').value.trim();
-    const passwordInput = document.getElementById('password').value.trim();
-
-    if (!usernameInput || !passwordInput) {
-        showToast("⚠️ Enter both Username and Password!");
-        return;
-    }
-
-    if (role === 'admin') {
-        if (usernameInput !== ADMIN_CREDENTIALS.username || passwordInput !== ADMIN_CREDENTIALS.password) {
-            showToast("❌ Invalid Admin Username or Password!");
+        if (!optA || !optB || !optC || !optD) {
+            showToast("⚠️ Please fill all 4 MCQ options!");
             return;
         }
-    } 
 
-    if (role === 'candidate') {
-        // Refresh local storage array
-        registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
-
-        const foundCandidate = registeredCandidates.find(
-            c => c.username.toLowerCase() === usernameInput.toLowerCase() && c.password === passwordInput
-        );
-        
-        if (!foundCandidate) {
-            showToast("❌ Invalid Candidate Credentials! Verify Username/Password.");
-            return;
-        }
-    }
-
-    isLoggedIn = true;
-    currentUserRole = role;
-
-    document.getElementById('welcome-text').innerText = `Welcome back, ${usernameInput} (${role.toUpperCase()})`;
-
-    const adminSection = document.getElementById('admin-test-section');
-    const candidateSection = document.getElementById('candidates-directory-section');
-
-    if (role === 'admin') {
-        adminSection.classList.remove('hidden');
-        candidateSection.classList.remove('hidden');
+        questionObj.options = { A: optA, B: optB, C: optC, D: optD };
+        questionObj.answer = correctOpt;
     } else {
-        adminSection.classList.add('hidden');
-        candidateSection.classList.remove('hidden');
+        const textAns = document.getElementById('textCorrectAns').value.trim();
+        questionObj.answer = textAns;
     }
 
-    renderPortalData();
-    showToast(`✅ Logged in successfully as ${role.toUpperCase()}`);
-    showPage('dashboard-page');
-}
+    tempQuestionsBatch.push(questionObj);
 
-function addQuestionToCurrentBatch() {
-    const qText = document.getElementById('qText').value.trim();
-    const optA = document.getElementById('optA').value.trim();
-    const optB = document.getElementById('optB').value.trim();
-    const optC = document.getElementById('optC').value.trim();
-    const optD = document.getElementById('optD').value.trim();
-    const correctOpt = document.getElementById('correctOpt').value;
-
-    if (!qText || !optA || !optB || !optC || !optD) {
-        showToast("⚠️ Please fill question and all 4 options!");
-        return;
-    }
-
-    tempQuestionsBatch.push({
-        question: qText,
-        options: { A: optA, B: optB, C: optC, D: optD },
-        answer: correctOpt
-    });
-
+    // Reset inputs
     document.getElementById('qText').value = '';
     document.getElementById('optA').value = '';
     document.getElementById('optB').value = '';
     document.getElementById('optC').value = '';
     document.getElementById('optD').value = '';
+    document.getElementById('textCorrectAns').value = '';
 
-    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to this draft test.`;
-    showToast("✅ Question added to draft!");
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper draft.`;
+    showToast("✅ Question added!");
 }
 
+// CREATE TEST HANDLER
 function handleCreateTest(event) {
     if (event) event.preventDefault();
-    const title = document.getElementById('testTitle').value;
+    const title = document.getElementById('testTitle').value.trim();
     const duration = document.getElementById('testDuration').value;
 
+    if (tempQuestionsBatch.length === 0) {
+        showToast("⚠️ Add at least one question before publishing!");
+        return;
+    }
+
     const newTest = {
-        id: Date.now(),
+        id: 'test_' + Date.now(),
         title: title,
         duration: duration,
         questions: [...tempQuestionsBatch]
@@ -248,104 +125,256 @@ function handleCreateTest(event) {
     document.getElementById('createTestForm').reset();
 
     renderPortalData();
-    showToast("✅ Test published with questions!");
+    showToast("✅ Exam Published Successfully!");
 }
 
+// RENDER ADMIN DASHBOARD
 function renderPortalData() {
-    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
-
-    document.getElementById('stat-candidates').innerText = registeredCandidates.length;
     document.getElementById('stat-tests').innerText = testsData.length;
 
     const testContainer = document.getElementById('test-list-container');
     testContainer.innerHTML = '';
 
     if (testsData.length === 0) {
-        testContainer.innerHTML = '<p style="text-align:left; color:#94a3b8;">No tests set yet. Create a test above.</p>';
+        testContainer.innerHTML = '<p style="text-align:left; color:#94a3b8;">No exams set yet.</p>';
     } else {
         testsData.forEach((test) => {
             const testRow = document.createElement('div');
-            testRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px;";
+            testRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 10px; border-radius: 8px;";
             
-            let deleteBtnHtml = currentUserRole === 'admin' 
-                ? `<button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; padding: 4px 10px !important; font-size: 0.8rem;" onclick="deleteTest(${test.id})">Delete</button>` 
-                : '';
-
             testRow.innerHTML = `
                 <div>
-                    <strong>${test.title}</strong>
+                    <strong style="font-size: 1.05rem;">${test.title}</strong>
                     <div style="font-size: 0.85rem; color: #94a3b8;">Duration: ${test.duration} Mins | Questions: ${test.questions ? test.questions.length : 0}</div>
                 </div>
-                ${deleteBtnHtml}
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-primary" style="padding: 5px 10px !important; font-size: 0.8rem;" onclick="copyDirectExamLink('${test.id}')">📋 Copy Exam Link</button>
+                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; padding: 5px 10px !important; font-size: 0.8rem;" onclick="deleteTest('${test.id}')">Delete</button>
+                </div>
             `;
             testContainer.appendChild(testRow);
         });
     }
+}
 
-    const tableBody = document.getElementById('candidate-table-body');
-    const emptyMsg = document.getElementById('no-candidate-msg');
-    tableBody.innerHTML = '';
-
-    if (registeredCandidates.length === 0) {
-        if (emptyMsg) emptyMsg.classList.remove('hidden');
-    } else {
-        if (emptyMsg) emptyMsg.classList.add('hidden');
-        registeredCandidates.forEach(cand => {
-            const row = document.createElement('tr');
-            row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-            row.innerHTML = `
-                <td style="padding: 10px;">${cand.id}</td>
-                <td style="padding: 10px;">${cand.name}</td>
-                <td style="padding: 10px;">${cand.username}</td>
-                <td style="padding: 10px;"><span style="color: #4ade80;">● ${cand.status}</span></td>
-            `;
-            tableBody.appendChild(row);
+function copyDirectExamLink(testId) {
+    const liveUrl = window.location.href.split('#')[0];
+    const directExamLink = `${liveUrl}#take-test=${testId}`;
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(directExamLink).then(() => {
+            showToast("✨ Direct Exam Link Copied for Candidates!");
         });
+    } else {
+        fallbackCopyText(directExamLink);
     }
+}
+
+// LOAD DIRECT EXAM FOR CANDIDATE
+function loadDirectExam(testId) {
+    testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
+    activeExamTest = testsData.find(t => t.id === testId);
+
+    if (!activeExamTest) {
+        alert("Exam link invalid or test removed!");
+        return;
+    }
+
+    // Hide Navbar for pure Google Form experience
+    document.getElementById('main-navbar').style.display = 'none';
+
+    document.getElementById('exam-paper-title').innerText = activeExamTest.title;
+    document.getElementById('exam-paper-info').innerText = `Duration: ${activeExamTest.duration} Mins | Total Questions: ${activeExamTest.questions.length}`;
+
+    const qContainer = document.getElementById('exam-questions-container');
+    qContainer.innerHTML = '';
+
+    activeExamTest.questions.forEach((q, idx) => {
+        const qCard = document.createElement('div');
+        qCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 10px; margin-bottom: 20px;";
+
+        let inputHtml = "";
+
+        if (q.type === 'mcq') {
+            inputHtml = `
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="A" required> A) ${q.options.A}</label>
+                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="B"> B) ${q.options.B}</label>
+                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="C"> C) ${q.options.C}</label>
+                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="D"> D) ${q.options.D}</label>
+                </div>
+            `;
+        } else if (q.type === 'oneword') {
+            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type your one-word answer" required style="margin-top: 10px;">`;
+        } else if (q.type === 'short') {
+            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type short answer (1-2 lines)" required style="margin-top: 10px;">`;
+        } else if (q.type === 'long') {
+            inputHtml = `<textarea name="q_${q.id}" rows="4" placeholder="Type detailed long answer..." required style="width: 100%; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;"></textarea>`;
+        }
+
+        qCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="color: #cbd5e1;">Q${idx + 1}. ${q.question}</h4>
+                <span style="font-size: 0.8rem; background: rgba(129, 140, 248, 0.2); color: #818cf8; padding: 2px 8px; border-radius: 12px;">${q.marks} Mark(s)</span>
+            </div>
+            ${inputHtml}
+        `;
+        qContainer.appendChild(qCard);
+    });
+
+    showPage('exam-attempt-page');
+}
+
+// SUBMIT EXAM & CALCULATE RESULT
+function submitCandidateExam(event) {
+    if (event) event.preventDefault();
+
+    const candName = document.getElementById('candExamName').value.trim();
+    const candRoll = document.getElementById('candExamRoll').value.trim();
+    const formData = new FormData(document.getElementById('candidateExamForm'));
+
+    let totalMarks = 0;
+    let scoredMarks = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let breakdownHtml = "";
+
+    activeExamTest.questions.forEach((q, idx) => {
+        totalMarks += q.marks;
+        const candAns = (formData.get(`q_${q.id}`) || "").trim();
+        let isCorrect = false;
+        let isAutoGraded = true;
+
+        if (q.type === 'mcq') {
+            if (candAns.toUpperCase() === q.answer.toUpperCase()) {
+                isCorrect = true;
+                scoredMarks += q.marks;
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
+        } else if (q.type === 'oneword') {
+            if (q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
+                isCorrect = true;
+                scoredMarks += q.marks;
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
+        } else {
+            isAutoGraded = false; // Short / Long answers require manual evaluation awareness
+        }
+
+        let statusBadge = isAutoGraded 
+            ? (isCorrect 
+                ? `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${q.marks})</span>` 
+                : `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${q.marks})</span>`)
+            : `<span style="color: #fbbf24; font-weight: bold;">⏳ Submitted for Admin Review</span>`;
+
+        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "N/A");
+
+        breakdownHtml += `
+            <div style="background: rgba(255,255,255,0.03); border-left: 4px solid ${isCorrect ? '#4ade80' : (isAutoGraded ? '#ef4444' : '#fbbf24')}; padding: 15px; border-radius: 6px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <strong>Q${idx + 1}. ${q.question}</strong>
+                    ${statusBadge}
+                </div>
+                <div style="font-size: 0.9rem; color: #94a3b8;"><strong>Your Answer:</strong> ${candAns || "Not Answered"}</div>
+                <div style="font-size: 0.9rem; color: #818cf8; margin-top: 4px;"><strong>Expected Answer / Key:</strong> ${correctDisplay}</div>
+            </div>
+        `;
+    });
+
+    document.getElementById('result-cand-name').innerText = `${candName} (ID: ${candRoll})`;
+    document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
+    document.getElementById('result-summary-stats').innerText = `Correct MCQs/One-Word: ${correctCount} | Incorrect: ${incorrectCount}`;
+    document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
+
+    showPage('exam-result-page');
+    showToast("🎉 Exam Submitted & Results Calculated!");
+}
+
+// LOGIN & UTILS
+function handleLogin(event) {
+    if (event) event.preventDefault();
+    const role = document.getElementById('userRole').value;
+    const usernameInput = document.getElementById('username').value.trim();
+    const passwordInput = document.getElementById('password').value.trim();
+
+    if (role === 'admin') {
+        if (usernameInput !== ADMIN_CREDENTIALS.username || passwordInput !== ADMIN_CREDENTIALS.password) {
+            showToast("❌ Invalid Admin Credentials!");
+            return;
+        }
+    } else {
+        registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+        const found = registeredCandidates.find(c => c.username.toLowerCase() === usernameInput.toLowerCase() && c.password === passwordInput);
+        if (!found) { showToast("❌ Invalid Candidate Credentials!"); return; }
+    }
+
+    isLoggedIn = true;
+    currentUserRole = role;
+    document.getElementById('welcome-text').innerText = `Welcome back, ${usernameInput}`;
+    
+    if (role === 'admin') document.getElementById('admin-test-section').classList.remove('hidden');
+    renderPortalData();
+    showPage('dashboard-page');
+}
+
+function handleCandidateRegister(event) {
+    if (event) event.preventDefault();
+    const fullname = document.getElementById('regFullname').value.trim();
+    const usernameInput = document.getElementById('regUsername').value.trim();
+    const passwordInput = document.getElementById('regPassword').value.trim();
+
+    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+    registeredCandidates.push({ name: fullname, username: usernameInput, password: passwordInput });
+    localStorage.setItem('portal_candidates', JSON.stringify(registeredCandidates));
+
+    showToast("✅ Registered successfully! Redirecting...");
+    document.getElementById('userRole').value = 'candidate';
+    document.getElementById('username').value = usernameInput;
+    showPage('login-page');
+}
+
+function handleLogout() {
+    isLoggedIn = false;
+    showPage('login-page');
 }
 
 function deleteTest(testId) {
     testsData = testsData.filter(t => t.id !== testId);
     localStorage.setItem('portal_tests', JSON.stringify(testsData));
     renderPortalData();
-    showToast("🗑️ Test removed!");
+    showToast("🗑️ Test deleted!");
 }
 
-function handleLogout() {
-    isLoggedIn = false;
-    currentUserRole = "";
-    document.getElementById('loginForm').reset();
-    showToast("Logged out successfully");
-    showPage('login-page');
-}
-
-function fallbackCopyText(text) {
-    const tempInput = document.createElement("input");
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand("copy");
-    document.body.removeChild(tempInput);
-    showToast("✨ Link successfully copied!");
-}
-
-function showToast(message) {
+function showToast(msg) {
     const toast = document.getElementById("copyToast");
     if (!toast) return;
-
-    toast.innerText = message;
+    toast.innerText = msg;
     toast.classList.remove("hidden");
     toast.classList.add("show");
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        toast.classList.add("hidden");
-    }, 3000);
+    setTimeout(() => { toast.classList.remove("show"); toast.classList.add("hidden"); }, 3000);
 }
 
+function togglePasswordVisibility(inputId, emojiId, trackerId) {
+    const inputField = document.getElementById(inputId);
+    const emojiSpan = document.getElementById(emojiId);
+    if (!inputField || !emojiSpan) return;
+    inputField.type = inputField.type === "password" ? "text" : "password";
+    emojiSpan.innerText = inputField.type === "password" ? "🙈" : "🐵";
+}
+
+function updateTrackerPos() {}
+
 window.addEventListener('DOMContentLoaded', () => {
-    if (window.location.hash === '#register') {
+    const hash = window.location.hash;
+    if (hash.startsWith('#take-test=')) {
+        const testId = hash.split('=')[1];
+        loadDirectExam(testId);
+    } else if (hash === '#register') {
         showPage('register-page');
     }
 });

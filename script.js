@@ -1,10 +1,16 @@
 let isLoggedIn = false;
 let currentUserRole = "";
+let currentLoggedInUser = null;
 
 let testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
 let registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+let examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
 let tempQuestionsBatch = [];
+
 let activeExamTest = null;
+let pendingExamTestId = null;
+let examTimerInterval = null;
+let examTimeRemaining = 0;
 
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
@@ -19,21 +25,18 @@ function showPage(pageId) {
     document.getElementById('exam-result-page').classList.add('hidden');
 
     const activePage = document.getElementById(pageId);
-    if (activePage) {
-        activePage.classList.remove('hidden');
-    }
+    if (activePage) activePage.classList.remove('hidden');
 }
 
 function openDashboard() {
     if (!isLoggedIn) {
-        showToast("⚠️ Please login first to access the dashboard!");
+        showToast("⚠️ Please login first!");
         showPage('login-page');
         return;
     }
     showPage('dashboard-page');
 }
 
-// TOGGLE QUESTION TYPE FIELDS IN ADMIN
 function toggleQuestionTypeInputs() {
     const qType = document.getElementById('qType').value;
     const mcqWrapper = document.getElementById('mcq-options-wrapper');
@@ -48,7 +51,6 @@ function toggleQuestionTypeInputs() {
     }
 }
 
-// ADD QUESTION TO BATCH
 function addQuestionToCurrentBatch() {
     const qType = document.getElementById('qType').value;
     const qText = document.getElementById('qText').value.trim();
@@ -74,7 +76,7 @@ function addQuestionToCurrentBatch() {
         const correctOpt = document.getElementById('correctOpt').value;
 
         if (!optA || !optB || !optC || !optD) {
-            showToast("⚠️ Please fill all 4 MCQ options!");
+            showToast("⚠️ Please fill all MCQ options!");
             return;
         }
 
@@ -87,7 +89,6 @@ function addQuestionToCurrentBatch() {
 
     tempQuestionsBatch.push(questionObj);
 
-    // Reset inputs
     document.getElementById('qText').value = '';
     document.getElementById('optA').value = '';
     document.getElementById('optB').value = '';
@@ -95,25 +96,24 @@ function addQuestionToCurrentBatch() {
     document.getElementById('optD').value = '';
     document.getElementById('textCorrectAns').value = '';
 
-    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper draft.`;
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper.`;
     showToast("✅ Question added!");
 }
 
-// CREATE TEST HANDLER
 function handleCreateTest(event) {
     if (event) event.preventDefault();
     const title = document.getElementById('testTitle').value.trim();
     const duration = document.getElementById('testDuration').value;
 
     if (tempQuestionsBatch.length === 0) {
-        showToast("⚠️ Add at least one question before publishing!");
+        showToast("⚠️ Add at least one question!");
         return;
     }
 
     const newTest = {
         id: 'test_' + Date.now(),
         title: title,
-        duration: duration,
+        duration: parseInt(duration),
         questions: [...tempQuestionsBatch]
     };
 
@@ -128,10 +128,14 @@ function handleCreateTest(event) {
     showToast("✅ Exam Published Successfully!");
 }
 
-// RENDER ADMIN DASHBOARD
 function renderPortalData() {
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
+    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
+
     document.getElementById('stat-tests').innerText = testsData.length;
+    document.getElementById('stat-candidates').innerText = registeredCandidates.length;
+    document.getElementById('stat-submissions').innerText = examSubmissions.length;
 
     const testContainer = document.getElementById('test-list-container');
     testContainer.innerHTML = '';
@@ -156,6 +160,27 @@ function renderPortalData() {
             testContainer.appendChild(testRow);
         });
     }
+
+    // Render Submissions Table for Admin
+    const subTableBody = document.getElementById('submissions-table-body');
+    subTableBody.innerHTML = '';
+    
+    if (examSubmissions.length === 0) {
+        subTableBody.innerHTML = '<tr><td colspan="5" style="padding:10px; color:#94a3b8;">No candidate submissions recorded yet.</td></tr>';
+    } else {
+        examSubmissions.forEach(sub => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            row.innerHTML = `
+                <td style="padding: 10px;"><strong>${sub.candidateName}</strong></td>
+                <td style="padding: 10px;">${sub.examTitle}</td>
+                <td style="padding: 10px; color: #4ade80; font-weight: bold;">${sub.score} / ${sub.totalMarks}</td>
+                <td style="padding: 10px;">${sub.attemptedCount} / ${sub.totalQuestions}</td>
+                <td style="padding: 10px; font-size: 0.85rem; color: #94a3b8;">${sub.timestamp}</td>
+            `;
+            subTableBody.appendChild(row);
+        });
+    }
 }
 
 function copyDirectExamLink(testId) {
@@ -171,21 +196,20 @@ function copyDirectExamLink(testId) {
     }
 }
 
-// LOAD DIRECT EXAM FOR CANDIDATE
-function loadDirectExam(testId) {
+// START EXAM WITH COUNTDOWN TIMER
+function startExamProcess(testId) {
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
     activeExamTest = testsData.find(t => t.id === testId);
 
     if (!activeExamTest) {
-        alert("Exam link invalid or test removed!");
+        alert("Exam link is invalid or has been deleted by Admin.");
         return;
     }
 
-    // Hide Navbar for pure Google Form experience
     document.getElementById('main-navbar').style.display = 'none';
 
     document.getElementById('exam-paper-title').innerText = activeExamTest.title;
-    document.getElementById('exam-paper-info').innerText = `Duration: ${activeExamTest.duration} Mins | Total Questions: ${activeExamTest.questions.length}`;
+    document.getElementById('exam-paper-info').innerText = `Candidate: ${currentLoggedInUser.name} | Total Questions: ${activeExamTest.questions.length}`;
 
     const qContainer = document.getElementById('exam-questions-container');
     qContainer.innerHTML = '';
@@ -199,18 +223,18 @@ function loadDirectExam(testId) {
         if (q.type === 'mcq') {
             inputHtml = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="A" required> A) ${q.options.A}</label>
+                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="A"> A) ${q.options.A}</label>
                     <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="B"> B) ${q.options.B}</label>
                     <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="C"> C) ${q.options.C}</label>
                     <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="D"> D) ${q.options.D}</label>
                 </div>
             `;
         } else if (q.type === 'oneword') {
-            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type your one-word answer" required style="margin-top: 10px;">`;
+            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type one-word answer" style="margin-top: 10px;">`;
         } else if (q.type === 'short') {
-            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type short answer (1-2 lines)" required style="margin-top: 10px;">`;
+            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type short answer" style="margin-top: 10px;">`;
         } else if (q.type === 'long') {
-            inputHtml = `<textarea name="q_${q.id}" rows="4" placeholder="Type detailed long answer..." required style="width: 100%; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;"></textarea>`;
+            inputHtml = `<textarea name="q_${q.id}" rows="4" placeholder="Type detailed long answer..." style="width: 100%; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;"></textarea>`;
         }
 
         qCard.innerHTML = `
@@ -223,79 +247,139 @@ function loadDirectExam(testId) {
         qContainer.appendChild(qCard);
     });
 
+    // Initialize Timer
+    examTimeRemaining = activeExamTest.duration * 60;
+    runExamTimer();
+
     showPage('exam-attempt-page');
 }
 
-// SUBMIT EXAM & CALCULATE RESULT
-function submitCandidateExam(event) {
-    if (event) event.preventDefault();
+function runExamTimer() {
+    clearInterval(examTimerInterval);
+    const timerDisplay = document.getElementById('exam-timer-display');
+    timerDisplay.classList.remove('timer-warning');
 
-    const candName = document.getElementById('candExamName').value.trim();
-    const candRoll = document.getElementById('candExamRoll').value.trim();
+    examTimerInterval = setInterval(() => {
+        examTimeRemaining--;
+
+        let minutes = Math.floor(examTimeRemaining / 60);
+        let seconds = examTimeRemaining % 60;
+
+        let displayMin = minutes < 10 ? '0' + minutes : minutes;
+        let displaySec = seconds < 10 ? '0' + seconds : seconds;
+
+        timerDisplay.innerText = `⏱️ ${displayMin}:${displaySec}`;
+
+        // Red and Pop animation in last 20 Seconds
+        if (examTimeRemaining <= 20) {
+            timerDisplay.classList.add('timer-warning');
+        }
+
+        if (examTimeRemaining <= 0) {
+            clearInterval(examTimerInterval);
+            showToast("⏰ Time is up! Submitting exam automatically...");
+            submitCandidateExam(null, true);
+        }
+    }, 1000);
+}
+
+// SUBMIT EXAM & SHOW DETAILED RESULT
+function submitCandidateExam(event, isAutoSubmit = false) {
+    if (event) event.preventDefault();
+    clearInterval(examTimerInterval);
+
     const formData = new FormData(document.getElementById('candidateExamForm'));
 
     let totalMarks = 0;
     let scoredMarks = 0;
     let correctCount = 0;
     let incorrectCount = 0;
+    let unattemptedCount = 0;
     let breakdownHtml = "";
 
     activeExamTest.questions.forEach((q, idx) => {
         totalMarks += q.marks;
         const candAns = (formData.get(`q_${q.id}`) || "").trim();
+        let isAttempted = candAns.length > 0;
         let isCorrect = false;
-        let isAutoGraded = true;
 
-        if (q.type === 'mcq') {
-            if (candAns.toUpperCase() === q.answer.toUpperCase()) {
-                isCorrect = true;
-                scoredMarks += q.marks;
-                correctCount++;
-            } else {
-                incorrectCount++;
-            }
-        } else if (q.type === 'oneword') {
-            if (q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
-                isCorrect = true;
-                scoredMarks += q.marks;
-                correctCount++;
-            } else {
-                incorrectCount++;
-            }
+        if (!isAttempted) {
+            unattemptedCount++;
         } else {
-            isAutoGraded = false; // Short / Long answers require manual evaluation awareness
+            if (q.type === 'mcq') {
+                if (candAns.toUpperCase() === q.answer.toUpperCase()) {
+                    isCorrect = true;
+                    scoredMarks += q.marks;
+                    correctCount++;
+                } else {
+                    incorrectCount++;
+                }
+            } else if (q.type === 'oneword') {
+                if (q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
+                    isCorrect = true;
+                    scoredMarks += q.marks;
+                    correctCount++;
+                } else {
+                    incorrectCount++;
+                }
+            }
         }
 
-        let statusBadge = isAutoGraded 
-            ? (isCorrect 
-                ? `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${q.marks})</span>` 
-                : `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${q.marks})</span>`)
-            : `<span style="color: #fbbf24; font-weight: bold;">⏳ Submitted for Admin Review</span>`;
+        let cardClass = "";
+        let statusBadge = "";
 
-        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "N/A");
+        if (!isAttempted) {
+            cardClass = "not-attempted-card";
+            statusBadge = `<span style="color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 4px;">⚠️ NOT ATTEMPTED</span>`;
+        } else if (isCorrect) {
+            cardClass = "correct-card";
+            statusBadge = `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${q.marks})</span>`;
+        } else {
+            cardClass = "incorrect-card";
+            statusBadge = `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${q.marks})</span>`;
+        }
+
+        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "Key answer specified by admin");
 
         breakdownHtml += `
-            <div style="background: rgba(255,255,255,0.03); border-left: 4px solid ${isCorrect ? '#4ade80' : (isAutoGraded ? '#ef4444' : '#fbbf24')}; padding: 15px; border-radius: 6px; margin-bottom: 12px;">
+            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <strong>Q${idx + 1}. ${q.question}</strong>
                     ${statusBadge}
                 </div>
-                <div style="font-size: 0.9rem; color: #94a3b8;"><strong>Your Answer:</strong> ${candAns || "Not Answered"}</div>
-                <div style="font-size: 0.9rem; color: #818cf8; margin-top: 4px;"><strong>Expected Answer / Key:</strong> ${correctDisplay}</div>
+                <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;">
+                    <strong>Your Answer:</strong> ${isAttempted ? candAns : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
+                </div>
+                <div style="font-size: 0.9rem; color: #4ade80; margin-top: 6px; background: rgba(74, 222, 128, 0.1); padding: 6px 10px; border-radius: 4px;">
+                    <strong>Correct Answer:</strong> ${correctDisplay}
+                </div>
             </div>
         `;
     });
 
-    document.getElementById('result-cand-name').innerText = `${candName} (ID: ${candRoll})`;
+    // Save Submission Record for Admin
+    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
+    examSubmissions.push({
+        candidateName: currentLoggedInUser.name,
+        candidateUsername: currentLoggedInUser.username,
+        examTitle: activeExamTest.title,
+        score: scoredMarks,
+        totalMarks: totalMarks,
+        attemptedCount: activeExamTest.questions.length - unattemptedCount,
+        totalQuestions: activeExamTest.questions.length,
+        timestamp: new Date().toLocaleString()
+    });
+    localStorage.setItem('portal_submissions', JSON.stringify(examSubmissions));
+
+    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
     document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
-    document.getElementById('result-summary-stats').innerText = `Correct MCQs/One-Word: ${correctCount} | Incorrect: ${incorrectCount}`;
+    document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Correct: ${correctCount}`;
     document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
 
     showPage('exam-result-page');
-    showToast("🎉 Exam Submitted & Results Calculated!");
 }
 
-// LOGIN & UTILS
+// LOGIN SYSTEM
 function handleLogin(event) {
     if (event) event.preventDefault();
     const role = document.getElementById('userRole').value;
@@ -307,17 +391,33 @@ function handleLogin(event) {
             showToast("❌ Invalid Admin Credentials!");
             return;
         }
+        currentLoggedInUser = { name: "Admin", username: usernameInput };
     } else {
         registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
         const found = registeredCandidates.find(c => c.username.toLowerCase() === usernameInput.toLowerCase() && c.password === passwordInput);
-        if (!found) { showToast("❌ Invalid Candidate Credentials!"); return; }
+        if (!found) { 
+            showToast("❌ Invalid Candidate Credentials!"); 
+            return; 
+        }
+        currentLoggedInUser = found;
     }
 
     isLoggedIn = true;
     currentUserRole = role;
-    document.getElementById('welcome-text').innerText = `Welcome back, ${usernameInput}`;
+
+    // Check if coming via shared exam link
+    if (role === 'candidate' && pendingExamTestId) {
+        startExamProcess(pendingExamTestId);
+        pendingExamTestId = null;
+        return;
+    }
+
+    document.getElementById('welcome-text').innerText = `Welcome back, ${currentLoggedInUser.name}`;
     
-    if (role === 'admin') document.getElementById('admin-test-section').classList.remove('hidden');
+    if (role === 'admin') {
+        document.getElementById('admin-test-section').classList.remove('hidden');
+        document.getElementById('admin-submissions-section').classList.remove('hidden');
+    }
     renderPortalData();
     showPage('dashboard-page');
 }
@@ -340,6 +440,7 @@ function handleCandidateRegister(event) {
 
 function handleLogout() {
     isLoggedIn = false;
+    currentLoggedInUser = null;
     showPage('login-page');
 }
 
@@ -359,7 +460,7 @@ function showToast(msg) {
     setTimeout(() => { toast.classList.remove("show"); toast.classList.add("hidden"); }, 3000);
 }
 
-function togglePasswordVisibility(inputId, emojiId, trackerId) {
+function togglePasswordVisibility(inputId, emojiId) {
     const inputField = document.getElementById(inputId);
     const emojiSpan = document.getElementById(emojiId);
     if (!inputField || !emojiSpan) return;
@@ -367,13 +468,23 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
     emojiSpan.innerText = inputField.type === "password" ? "🙈" : "🐵";
 }
 
-function updateTrackerPos() {}
+function fallbackCopyText(text) {
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    showToast("✨ Link copied!");
+}
 
 window.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash;
     if (hash.startsWith('#take-test=')) {
-        const testId = hash.split('=')[1];
-        loadDirectExam(testId);
+        pendingExamTestId = hash.split('=')[1];
+        document.getElementById('userRole').value = 'candidate';
+        showToast("🔒 Please login as candidate to begin test.");
+        showPage('login-page');
     } else if (hash === '#register') {
         showPage('register-page');
     }

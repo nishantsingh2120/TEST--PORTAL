@@ -13,26 +13,60 @@ const ADMIN_CREDENTIALS = {
     password: "Nikki812616"
 };
 
-// Password Toggle & Animated Emoji Handler
-function togglePasswordVisibility(inputId, emojiId) {
+// Password Toggle & Animated Monkey Tracking Handler
+function togglePasswordVisibility(inputId, emojiId, trackerId) {
     const inputField = document.getElementById(inputId);
     const emojiSpan = document.getElementById(emojiId);
+    const trackerSpan = document.getElementById(trackerId);
 
     if (!inputField || !emojiSpan) return;
 
     if (inputField.type === "password") {
         inputField.type = "text";
-        emojiSpan.innerText = "👁️"; // Eyes watching
+        emojiSpan.innerText = "🐵"; // Open Eyes Monkey at side
         emojiSpan.classList.add("emoji-peek-anim");
+
+        if (trackerSpan) {
+            trackerSpan.classList.remove("hidden");
+            updateTrackerPos(inputId, trackerId);
+        }
     } else {
         inputField.type = "password";
-        emojiSpan.innerText = "🙈"; // Eyes covered
+        emojiSpan.innerText = "🙈"; // Closed Eyes Monkey at side
         emojiSpan.classList.add("emoji-peek-anim");
+
+        if (trackerSpan) {
+            trackerSpan.classList.add("hidden");
+        }
     }
 
     setTimeout(() => {
         emojiSpan.classList.remove("emoji-peek-anim");
     }, 300);
+}
+
+// Dynamic Cursor Tracker Calculation
+function updateTrackerPos(inputId, trackerId) {
+    const inputField = document.getElementById(inputId);
+    const trackerSpan = document.getElementById(trackerId);
+
+    if (!inputField || !trackerSpan || trackerSpan.classList.contains("hidden")) return;
+
+    const text = inputField.value;
+    const font = window.getComputedStyle(inputField).font;
+
+    const canvas = document.getElementById("textWidthCanvas") || document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    context.font = font;
+
+    const textWidth = context.measureText(text).width;
+    
+    // Calculate position inside input
+    const paddingLeft = 16; 
+    const maxOffset = inputField.clientWidth - 70;
+    const calculatedPos = Math.min(paddingLeft + textWidth, maxOffset);
+
+    trackerSpan.style.transform = `translateX(${calculatedPos}px)`;
 }
 
 // Page Navigation

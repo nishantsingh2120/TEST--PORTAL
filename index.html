@@ -223,6 +223,7 @@
             <!-- CANDIDATES SUBMISSIONS AUDIT -->
             <div class="card">
                 <h2 style="text-align: left;">Candidate Exam Submissions Report</h2>
+                <p style="color: #94a3b8; font-size: 0.85rem;">(Tap on any candidate name to view full audit report)</p>
                 <div style="overflow-x: auto; width: 100%; margin-top: 15px;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -230,8 +231,7 @@
                                 <th style="padding: 10px;">Candidate Name</th>
                                 <th style="padding: 10px;">Exam Title</th>
                                 <th style="padding: 10px;">Score</th>
-                                <th style="padding: 10px;">Attempted / Total</th>
-                                <th style="padding: 10px;">Submission Time</th>
+                                <th style="padding: 10px;">Time Taken</th>
                             </tr>
                         </thead>
                         <tbody id="submissions-table-body"></tbody>
@@ -276,14 +276,11 @@
             </div>
         </section>
 
-        <!-- EXAM RESULT SCORECARD VIEW -->
+        <!-- EXAM RESULT / AUDIT REPORT VIEW -->
         <section id="exam-result-page" class="hidden" style="width: 100%; max-width: 750px; margin: 0 auto;">
             <div class="card" style="text-align: left;">
-                <div style="text-align: right; margin-bottom: 10px;">
-                    <button class="btn btn-primary" onclick="openDashboard()">Back to My History 📋</button>
-                </div>
-                <h2 style="color: #4ade80; text-align: center; margin-bottom: 5px;">🎉 Performance Report</h2>
-                <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Detailed exam analysis and answers:</p>
+                <h2 style="color: #4ade80; text-align: center; margin-bottom: 5px;">📋 Exam Audit & Performance Report</h2>
+                <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Detailed question-by-question candidate analysis:</p>
 
                 <div style="background: rgba(129, 140, 248, 0.1); border: 1px solid #818cf8; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 25px;">
                     <h3 id="result-cand-name" style="margin-bottom: 5px;">Student Name</h3>

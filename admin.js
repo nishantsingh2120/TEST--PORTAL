@@ -1,6 +1,8 @@
-// Admin Panel Logic & Data Management
+// Complete Admin Panel Logic & Data Management
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Admin JS Loaded");
+    
     const adminForm = document.getElementById('admin-login-form');
     if (adminForm) {
         adminForm.addEventListener('submit', handleAdminLogin);
@@ -36,53 +38,95 @@ let currentEditingTestId = null;
 
 async function handleAdminLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('admin-email').value;
-    const password = document.getElementById('admin-password').value;
+    console.log("Login form submitted");
 
-    if (!supabaseClient) {
-        showToast("Supabase is not configured properly.", "danger");
+    const emailInput = document.getElementById('admin-email');
+    const passwordInput = document.getElementById('admin-password');
+
+    if (!emailInput || !passwordInput) {
+        alert("Email or Password input fields missing in HTML!");
         return;
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
-    if (error) {
-        showToast(`Login Failed: ${error.message}`, "danger");
-    } else {
-        showToast("Authenticated successfully!", "success");
-        document.getElementById('nav-admin-login-btn').classList.add('hidden');
-        document.getElementById('logout-btn').classList.remove('hidden');
-        showView('view-admin-dashboard');
-        loadAdminDashboardData();
+    if (!supabaseClient) {
+        alert("Supabase client not initialized! Check config.js");
+        if (typeof showToast === "function") showToast("Supabase configuration missing!", "danger");
+        return;
+    }
+
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ 
+            email: email, 
+            password: password 
+        });
+
+        if (error) {
+            console.error("Supabase Auth Error:", error);
+            alert("Login Failed: " + error.message);
+            if (typeof showToast === "function") showToast(`Login Failed: ${error.message}`, "danger");
+        } else {
+            console.log("Login successful:", data);
+            if (typeof showToast === "function") showToast("Authenticated successfully!", "success");
+            
+            const navBtn = document.getElementById('nav-admin-login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (navBtn) navBtn.classList.add('hidden');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            
+            showView('view-admin-dashboard');
+            loadAdminDashboardData();
+        }
+    } catch (err) {
+        console.error("Unexpected Auth Error:", err);
+        alert("Unexpected Login Error: " + err.message);
     }
 }
 
 async function loadAdminDashboardData() {
     if (!supabaseClient) return;
 
-    // Fetch Tests
-    const { data: tests, error: testErr } = await supabaseClient.from('tests').select('*').order('created_at', { ascending: false });
-    
-    if (!testErr && tests) {
-        renderTestsTable(tests);
-        document.getElementById('stat-total-tests').innerText = tests.length;
-        document.getElementById('stat-published-tests').innerText = tests.filter(t => t.is_published).length;
-    }
+    try {
+        // Fetch Tests
+        const { data: tests, error: testErr } = await supabaseClient
+            .from('tests')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (!testErr && tests) {
+            renderTestsTable(tests);
+            const totalElem = document.getElementById('stat-total-tests');
+            const pubElem = document.getElementById('stat-published-tests');
+            if (totalElem) totalElem.innerText = tests.length;
+            if (pubElem) pubElem.innerText = tests.filter(t => t.is_published).length;
+        } else if (testErr) {
+            console.error("Fetch Tests Error:", testErr);
+        }
 
-    // Fetch Candidate Results
-    const { data: results, error: resErr } = await supabaseClient
-        .from('candidate_attempts')
-        .select('*, tests(title)')
-        .order('submitted_at', { ascending: false });
+        // Fetch Candidate Results
+        const { data: results, error: resErr } = await supabaseClient
+            .from('candidate_attempts')
+            .select('*, tests(title)')
+            .order('submitted_at', { ascending: false });
 
-    if (!resErr && results) {
-        renderResultsTable(results);
-        document.getElementById('stat-total-attempts').innerText = results.length;
+        if (!resErr && results) {
+            renderResultsTable(results);
+            const attElem = document.getElementById('stat-total-attempts');
+            if (attElem) attElem.innerText = results.length;
+        } else if (resErr) {
+            console.error("Fetch Results Error:", resErr);
+        }
+    } catch (err) {
+        console.error("Error loading dashboard data:", err);
     }
 }
 
 function renderTestsTable(tests) {
     const tbody = document.getElementById('tests-table-body');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     tests.forEach(test => {
@@ -106,11 +150,13 @@ function renderTestsTable(tests) {
 
 function copyShareLink(url) {
     navigator.clipboard.writeText(url);
-    showToast("Exam Direct Link Copied to Clipboard!", "info");
+    if (typeof showToast === "function") showToast("Exam Direct Link Copied to Clipboard!", "info");
+    else alert("Link Copied!");
 }
 
 function renderResultsTable(results) {
     const tbody = document.getElementById('results-table-body');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     results.forEach(res => {
@@ -130,21 +176,30 @@ function renderResultsTable(results) {
 
 function openCreateTestForm() {
     currentEditingTestId = null;
-    document.getElementById('test-form').reset();
-    document.getElementById('test-id').value = '';
-    document.getElementById('builder-title').innerText = 'Create New Examination';
-    document.getElementById('question-management-section').classList.add('hidden');
+    const testForm = document.getElementById('test-form');
+    if (testForm) testForm.reset();
+    
+    const testIdElem = document.getElementById('test-id');
+    if (testIdElem) testIdElem.value = '';
+    
+    const titleElem = document.getElementById('builder-title');
+    if (titleElem) titleElem.innerText = 'Create New Examination';
+    
+    const qSection = document.getElementById('question-management-section');
+    if (qSection) qSection.classList.add('hidden');
+    
     showView('view-test-builder');
 }
 
 async function saveTestConfiguration(e) {
     e.preventDefault();
+    
     const id = document.getElementById('test-id').value;
     const title = document.getElementById('test-title').value;
     const duration = parseInt(document.getElementById('test-duration').value, 10);
     const description = document.getElementById('test-description').value;
     
-    // Explicit Boolean values
+    // Proper Boolean mapping
     const negativeMarking = Boolean(document.getElementById('test-negative-marking').checked);
     const isPublished = Boolean(document.getElementById('test-is-published').checked);
 
@@ -164,13 +219,20 @@ async function saveTestConfiguration(e) {
     }
 
     if (result.error) {
-        showToast(`Failed to save test: ${result.error.message}`, "danger");
+        console.error("Save Test Error:", result.error);
+        if (typeof showToast === "function") showToast(`Failed to save test: ${result.error.message}`, "danger");
+        else alert(`Failed to save test: ${result.error.message}`);
     } else {
-        showToast("Test settings saved successfully!", "success");
+        if (typeof showToast === "function") showToast("Test settings saved successfully!", "success");
+        else alert("Test settings saved successfully!");
+        
         const savedTest = result.data[0];
         currentEditingTestId = savedTest.id;
         document.getElementById('test-id').value = savedTest.id;
-        document.getElementById('question-management-section').classList.remove('hidden');
+        
+        const qSection = document.getElementById('question-management-section');
+        if (qSection) qSection.classList.remove('hidden');
+        
         loadQuestionsForTest(savedTest.id);
     }
 }
@@ -179,7 +241,7 @@ async function editTest(testId) {
     currentEditingTestId = testId;
     const { data: test, error } = await supabaseClient.from('tests').select('*').eq('id', testId).single();
     if (error || !test) {
-        showToast("Failed to fetch test details", "danger");
+        if (typeof showToast === "function") showToast("Failed to fetch test details", "danger");
         return;
     }
 
@@ -191,7 +253,10 @@ async function editTest(testId) {
     document.getElementById('test-is-published').checked = Boolean(test.is_published);
 
     document.getElementById('builder-title').innerText = `Edit: ${test.title}`;
-    document.getElementById('question-management-section').classList.remove('hidden');
+    
+    const qSection = document.getElementById('question-management-section');
+    if (qSection) qSection.classList.remove('hidden');
+    
     showView('view-test-builder');
     loadQuestionsForTest(testId);
 }
@@ -204,6 +269,7 @@ async function loadQuestionsForTest(testId) {
         .order('created_at', { ascending: true });
 
     const container = document.getElementById('questions-list-container');
+    if (!container) return;
     container.innerHTML = '';
 
     if (questions && questions.length > 0) {
@@ -227,16 +293,24 @@ async function loadQuestionsForTest(testId) {
 }
 
 function openQuestionModal() {
-    document.getElementById('question-form').reset();
-    document.getElementById('q-id').value = '';
+    const qForm = document.getElementById('question-form');
+    if (qForm) qForm.reset();
+    
+    const qId = document.getElementById('q-id');
+    if (qId) qId.value = '';
+    
     const qCorrectSelect = document.getElementById('q-correct');
-    qCorrectSelect.innerHTML = `
-        <option value="A">Option A</option>
-        <option value="B">Option B</option>
-        <option value="C">Option C</option>
-        <option value="D">Option D</option>
-    `;
-    document.getElementById('modal-question').classList.remove('hidden');
+    if (qCorrectSelect) {
+        qCorrectSelect.innerHTML = `
+            <option value="A">Option A</option>
+            <option value="B">Option B</option>
+            <option value="C">Option C</option>
+            <option value="D">Option D</option>
+        `;
+    }
+    
+    const modal = document.getElementById('modal-question');
+    if (modal) modal.classList.remove('hidden');
 }
 
 async function saveQuestion(e) {
@@ -269,10 +343,15 @@ async function saveQuestion(e) {
     const { error } = await supabaseClient.from('questions').insert([payload]);
 
     if (error) {
-        showToast(`Failed to add question: ${error.message}`, "danger");
+        console.error("Save Question Error:", error);
+        if (typeof showToast === "function") showToast(`Failed to add question: ${error.message}`, "danger");
+        else alert(`Failed to add question: ${error.message}`);
     } else {
-        showToast("Question added!", "success");
-        document.getElementById('modal-question').classList.add('hidden');
+        if (typeof showToast === "function") showToast("Question added!", "success");
+        
+        const modal = document.getElementById('modal-question');
+        if (modal) modal.classList.add('hidden');
+        
         loadQuestionsForTest(currentEditingTestId);
     }
 }
@@ -281,7 +360,7 @@ async function deleteQuestion(qId) {
     if (!confirm("Are you sure you want to delete this question?")) return;
     const { error } = await supabaseClient.from('questions').delete().eq('id', qId);
     if (!error) {
-        showToast("Question deleted", "info");
+        if (typeof showToast === "function") showToast("Question deleted", "info");
         loadQuestionsForTest(currentEditingTestId);
     }
 }

@@ -3,434 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Examination & Remote Proctoring System</title>
+    <title>Portal Portal</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Supabase JS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- MediaPipe Face Mesh & Camera Utils CDN for Proctored Face Detection -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
-    <!-- Top Navigation Bar -->
-    <header class="navbar">
-        <div class="nav-brand">
-            <span class="brand-icon">🛡️</span>
-            <span id="nav-title">ONLINE EXAMINATION PORTAL</span>
-        </div>
-        <div id="auth-status-container">
-            <span id="user-display" class="hidden"></span>
-            <button id="logout-btn" class="btn btn-secondary btn-sm hidden">Logout</button>
-            <button id="nav-admin-login-btn" class="btn btn-outline btn-sm">Admin Access</button>
-        </div>
+    <!-- Header / Navbar -->
+    <header>
+        <div class="brand-logo">Portal App</div>
+        <nav>
+            <button class="btn btn-outline" onclick="showPage('login-page')">Login</button>
+            <button class="btn btn-outline" onclick="showPage('dashboard-page')">Dashboard</button>
+        </nav>
     </header>
 
-    <!-- Global Alert / Toast Notification Container -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- MAIN VIEW CONTAINERS (Single Page Architecture) -->
     <main class="container">
-
-        <!-- 1. ADMIN LOGIN VIEW -->
-        <section id="view-admin-login" class="view-panel hidden">
-            <div class="card auth-card">
-                <h2>Admin Authentication</h2>
-                <p class="subtitle">Log in to manage exams, view attempts, and monitor proctoring logs.</p>
-                <form id="admin-login-form">
-                    <div class="form-group">
-                        <label for="admin-email">Email Address</label>
-                        <input type="email" id="admin-email" required placeholder="admin@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="admin-password">Password</label>
-                        <input type="password" id="admin-password" required placeholder="••••••••">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-                </form>
-            </div>
-        </section>
-
-        <!-- 2. ADMIN DASHBOARD VIEW -->
-        <section id="view-admin-dashboard" class="view-panel hidden">
-            <div class="dashboard-header">
-                <div>
-                    <h1>Control Panel</h1>
-                    <p class="subtitle">Overview of exams, performance metrics, and compliance.</p>
-                </div>
-                <button id="btn-open-create-test" class="btn btn-primary">+ Create New Test</button>
-            </div>
-
-            <!-- Dashboard Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-total-tests">0</div>
-                    <div class="stat-label">Total Tests</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-published-tests">0</div>
-                    <div class="stat-label">Published Tests</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-total-attempts">0</div>
-                    <div class="stat-label">Total Attempts</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-avg-score">0%</div>
-                    <div class="stat-label">Average Pass Rate</div>
-                </div>
-            </div>
-
-            <!-- Navigation Tabs -->
-            <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="tab-tests">Tests Management</button>
-                <button class="tab-btn" data-tab="tab-results">Candidate Attempts & Results</button>
-            </div>
-
-            <!-- Tab Content: Test List -->
-            <div id="tab-tests" class="tab-content active">
-                <div class="table-responsive card">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Test Title</th>
-                                <th>Duration</th>
-                                <th>Questions</th>
-                                <th>Total Marks</th>
-                                <th>Status</th>
-                                <th>Share Link</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tests-table-body">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tab Content: Candidate Results -->
-            <div id="tab-results" class="tab-content">
-                <div class="table-responsive card">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Candidate</th>
-                                <th>Test</th>
-                                <th>Score</th>
-                                <th>Percentage</th>
-                                <th>Violations</th>
-                                <th>Submitted At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="results-table-body">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. TEST BUILDER / EDIT VIEW (ADMIN) -->
-        <section id="view-test-builder" class="view-panel hidden">
-            <div class="dashboard-header">
-                <div>
-                    <h2 id="builder-title">Create New Examination</h2>
-                    <p class="subtitle">Configure exam parameters and questions.</p>
-                </div>
-                <button id="btn-back-dashboard" class="btn btn-secondary">← Back to Dashboard</button>
-            </div>
-
+        
+        <!-- LOGIN PAGE VIEW -->
+        <section id="login-page" class="login-container">
             <div class="card">
-                <h3>General Settings</h3>
-                <form id="test-form">
-                    <input type="hidden" id="test-id">
-                    <div class="form-row">
-                        <div class="form-group flex-2">
-                            <label for="test-title">Test Title</label>
-                            <input type="text" id="test-title" required placeholder="e.g. Advanced Cybersecurity Evaluation">
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="test-duration">Duration (Minutes)</label>
-                            <input type="number" id="test-duration" min="1" value="30" required>
-                        </div>
-                    </div>
+                <h2>Portal Login</h2>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    
                     <div class="form-group">
-                        <label for="test-description">Instructions & Description</label>
-                        <textarea id="test-description" rows="3" placeholder="Provide instructions for candidates..."></textarea>
+                        <label for="userRole">Select Login Type</label>
+                        <select id="userRole" required>
+                            <option value="admin">Admin Login</option>
+                            <option value="candidate">Candidate Login</option>
+                        </select>
                     </div>
-                    <div class="form-row checkbox-row">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="test-negative-marking">
-                            Enable Negative Marking
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="test-is-published">
-                            Publish Test Immediately
-                        </label>
-                    </div>
-                    <button type="submit" class="btn btn-success">Save Exam Configurations</button>
-                </form>
-            </div>
 
-            <!-- Question Editor Section -->
-            <div id="question-management-section" class="card margin-top hidden">
-                <div class="dashboard-header">
-                    <h3>Questions List</h3>
-                    <button id="btn-add-question" class="btn btn-primary">+ Add Question</button>
-                </div>
-                <div id="questions-list-container" class="questions-list">
-                    <!-- Dynamic Question Cards -->
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. CANDIDATE EXAMINATION ENTRY VIEW -->
-        <section id="view-candidate-entry" class="view-panel hidden">
-            <div class="card candidate-card">
-                <div class="exam-header-badge">OFFICIAL ONLINE EXAMINATION</div>
-                <h1 id="entry-test-title">Loading Examination...</h1>
-                <p id="entry-test-description" class="exam-desc"></p>
-
-                <div class="exam-meta-grid">
-                    <div class="meta-item">
-                        <span class="meta-label">Duration</span>
-                        <span class="meta-val" id="entry-duration">-- mins</span>
-                    </div>
-                    <div class="meta-item">
-                        <span class="meta-label">Total Questions</span>
-                        <span class="meta-val" id="entry-questions-count">--</span>
-                    </div>
-                    <div class="meta-item">
-                        <span class="meta-label">Total Marks</span>
-                        <span class="meta-val" id="entry-total-marks">--</span>
-                    </div>
-                </div>
-
-                <div class="rules-box">
-                    <h4>🔒 Integrity Rules & Compliance Requirements</h4>
-                    <ul>
-                        <li><strong>Proctored Environment:</strong> Camera access is mandatory throughout the test.</li>
-                        <li><strong>Fullscreen Mandatory:</strong> Exiting fullscreen triggers a compliance violation.</li>
-                        <li><strong>Tab Focus:</strong> Navigating away from the active tab is logged immediately.</li>
-                        <li><strong>Violation Threshold:</strong> Reaching 3 violations results in automatic submission.</li>
-                    </ul>
-                </div>
-
-                <form id="candidate-start-form">
                     <div class="form-group">
-                        <label for="candidate-name">Full Name *</label>
-                        <input type="text" id="candidate-name" required placeholder="John Doe">
+                        <label for="username">Username / Candidate ID</label>
+                        <input type="text" id="username" placeholder="Enter ID" required>
                     </div>
+
                     <div class="form-group">
-                        <label for="candidate-email">Email Address (Optional)</label>
-                        <input type="email" id="candidate-email" placeholder="john@example.com">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter password" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block btn-lg">Begin Examination Session</button>
+
+                    <button type="submit" class="btn btn-primary">Login Now</button>
                 </form>
             </div>
         </section>
 
-        <!-- 5. PROCTORED EXAMINATION WORKSPACE -->
-        <section id="view-exam-workspace" class="view-panel hidden">
-            <!-- Top Exam Bar -->
-            <div class="exam-topbar">
-                <div>
-                    <span id="exam-workspace-title" class="exam-workspace-title">Exam Title</span>
-                    <span id="exam-workspace-candidate" class="candidate-tag">Candidate Name</span>
-                </div>
-                <div class="proctor-status-indicator">
-                    <span class="pulse-dot"></span> Proctoring Active
-                </div>
-                <div class="timer-box">
-                    <span>Time Left:</span>
-                    <span id="exam-timer" class="timer-display">00:00:00</span>
-                </div>
-            </div>
-
-            <div class="exam-layout">
-                <!-- Question Column -->
-                <div class="exam-main-content card">
-                    <div class="question-header">
-                        <span id="question-number-badge" class="badge">Question 1</span>
-                        <span id="question-marks-badge" class="badge badge-outline">1 Mark</span>
-                    </div>
-
-                    <div id="question-text" class="question-text-content">
-                        Loading Question Text...
-                    </div>
-
-                    <div id="options-container" class="options-group">
-                        <!-- Options generated dynamically -->
-                    </div>
-
-                    <div class="exam-actions">
-                        <button id="btn-prev-question" class="btn btn-secondary">Previous</button>
-                        <button id="btn-next-question" class="btn btn-secondary">Next</button>
-                        <button id="btn-submit-exam" class="btn btn-danger align-right">Submit Test</button>
-                    </div>
-                </div>
-
-                <!-- Sidebar: Proctoring Video + Palette -->
-                <div class="exam-sidebar">
-                    <!-- Live Camera Feed Widget -->
-                    <div class="card camera-card">
-                        <div class="camera-wrapper">
-                            <video id="webcam-preview" autoplay playsinline muted></video>
-                            <canvas id="face-canvas"></canvas>
-                            <div id="proctor-overlay-warning" class="proctor-overlay hidden">
-                                ⚠️ NO FACE DETECTED
-                            </div>
-                        </div>
-                        <div class="violation-counter-box">
-                            <span>Compliance Violations:</span>
-                            <span id="violation-count-badge" class="badge badge-warning">0 / 3</span>
-                        </div>
-                    </div>
-
-                    <!-- Question Palette Navigation -->
-                    <div class="card palette-card">
-                        <h4>Question Palette</h4>
-                        <div id="question-palette" class="palette-grid">
-                            <!-- Populated dynamically -->
-                        </div>
-                        <div class="palette-legend">
-                            <span class="legend-item"><span class="legend-box answered"></span> Answered</span>
-                            <span class="legend-item"><span class="legend-box unanswered"></span> Unanswered</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. RESULT SUMMARY VIEW -->
-        <section id="view-result-summary" class="view-panel hidden">
-            <div class="card result-card">
-                <div class="result-icon">🎉</div>
-                <h2>Examination Completed</h2>
-                <p class="subtitle">Your answers have been securely recorded and evaluated.</p>
-
-                <div class="score-display">
-                    <div class="score-main" id="result-score-text">0 / 0</div>
-                    <div class="percentage-badge" id="result-percentage-text">0%</div>
-                </div>
+        <!-- DASHBOARD PAGE VIEW -->
+        <section id="dashboard-page" class="hidden">
+            <div class="card">
+                <h2>Dashboard Overview</h2>
+                <p>Welcome to the Portal! Share your link with candidates below.</p>
+                <br>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-value text-success" id="result-correct">0</div>
-                        <div class="stat-label">Correct Answers</div>
+                        <h3>Total Candidates</h3>
+                        <p>128</p>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value text-danger" id="result-wrong">0</div>
-                        <div class="stat-label">Incorrect Answers</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value text-muted" id="result-unanswered">0</div>
-                        <div class="stat-label">Unanswered</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="result-time-taken">0s</div>
-                        <div class="stat-label">Time Spent</div>
+                        <h3>Active Tests</h3>
+                        <p>14</p>
                     </div>
                 </div>
 
-                <div id="result-status-message" class="alert-box alert-info margin-top">
-                    Submission recorded successfully.
+                <!-- Copy Link Section -->
+                <div class="form-group" style="align-items: center; width: 100%;">
+                    <label>Share Candidate Registration Link</label>
+                    <button class="btn btn-primary" onclick="copyLink('https://yourportal.com/candidate-register')">
+                        📋 Copy Candidate Link
+                    </button>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- QUESTION EDITOR MODAL (ADMIN) -->
-    <div id="modal-question" class="modal hidden">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <h3 id="modal-question-title">Add New Question</h3>
-                <span class="modal-close" id="btn-close-qmodal">&times;</span>
-            </div>
-            <form id="question-form">
-                <input type="hidden" id="q-id">
-                <div class="form-group">
-                    <label for="q-text">Question Prompt</label>
-                    <textarea id="q-text" rows="3" required placeholder="Enter question statement..."></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="q-type">Type</label>
-                        <select id="q-type">
-                            <option value="MCQ">Multiple Choice (MCQ)</option>
-                            <option value="TRUE_FALSE">True / False</option>
-                        </select>
-                    </div>
-                    <div class="form-group flex-1">
-                        <label for="q-marks">Marks Allocated</label>
-                        <input type="number" id="q-marks" min="0.5" step="0.5" value="1" required>
-                    </div>
-                    <div class="form-group flex-1">
-                        <label for="q-neg-marks">Deduction (Negative)</label>
-                        <input type="number" id="q-neg-marks" min="0" step="0.25" value="0">
-                    </div>
-                </div>
-
-                <!-- MCQ Options Panel -->
-                <div id="mcq-options-panel">
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="q-op-a">Option A</label>
-                            <input type="text" id="q-op-a" class="mcq-input">
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="q-op-b">Option B</label>
-                            <input type="text" id="q-op-b" class="mcq-input">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group flex-1">
-                            <label for="q-op-c">Option C</label>
-                            <input type="text" id="q-op-c" class="mcq-input">
-                        </div>
-                        <div class="form-group flex-1">
-                            <label for="q-op-d">Option D</label>
-                            <input type="text" id="q-op-d" class="mcq-input">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="q-correct">Correct Answer Key</label>
-                    <select id="q-correct" required>
-                        <!-- Dynamic Options populated by JavaScript -->
-                    </select>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="btn-cancel-qmodal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Question</button>
-                </div>
-            </form>
-        </div>
+    <!-- Toast Notification Popup -->
+    <div id="copyToast" class="toast-notification hidden">
+        ✨ Link successfully copied to clipboard!
     </div>
 
-    <!-- ATTEMPT DETAILS MODAL (ADMIN INSPECTION) -->
-    <div id="modal-attempt-details" class="modal hidden">
-        <div class="modal-content card modal-lg">
-            <div class="modal-header">
-                <h3>Candidate Attempt Inspection</h3>
-                <span class="modal-close" id="btn-close-attempt-modal">&times;</span>
-            </div>
-            <div id="attempt-modal-body">
-                <!-- Populated dynamically -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Application Script Files -->
-    <script src="config.js"></script>
-    <script src="camera.js"></script>
-    <script src="admin.js"></script>
-    <script src="exam.js"></script>
-    <script src="app.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

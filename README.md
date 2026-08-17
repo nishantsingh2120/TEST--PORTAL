@@ -1,23 +1,15 @@
-# Proctored Online Examination System
+# Online Examination & Remote Proctoring System
 
-A pure HTML/CSS/JavaScript web application backed by Supabase for managing and conducting secure online examinations with browser-based proctoring.
+A web-based online exam platform with real-time AI face monitoring and proctoring.
 
----
+## Features
+- Admin panel to create exams, manage questions, and evaluate results.
+- Candidate exam workspace with interactive palette navigation.
+- MediaPipe Face Mesh AI for real-time webcam proctoring (Multiple faces / No face detection).
+- Fullscreen enforcement and focus-loss violation counter.
+- Automatic scoring with support for negative marking.
 
-## 🚀 Deployment Instructions for Cloudflare Pages
-
-1. **Create Repository:**
-   Push the files directly to your GitHub repository root:
-   - `index.html`
-   - `config.js`
-   - `style.css`
-   - `app.js`
-   - `admin.js`
-   - `exam.js`
-   - `camera.js`
-
-2. **Configure Supabase Credentials:**
-   Edit `config.js` and input your project values:
-   ```javascript
-   const SUPABASE_URL = "https://kzutrwddzxpqjgfhhlhc.supabase.co/rest/v1/";
-   const SUPABASE_ANON_KEY = "sb_publishable_3pQkQDCdjZgcABFzCVlGQA_NpivWNkl";
+## Setup Instructions
+1. Run `database.sql` in Supabase SQL Editor.
+2. Update Supabase URL & Anon Key in `config.js`.
+3. Deploy to Cloudflare Pages via GitHub.

@@ -1,10 +1,10 @@
-// Global Portal Data State
+// Global Portal Data State - Loaded from LocalStorage
 let isLoggedIn = false;
 let currentUserRole = "";
 
-// Dynamic Data Arrays
-let testsData = [];
-let registeredCandidates = [];
+// Dynamic Data Arrays with Permanent LocalStorage Persistence
+let testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
+let registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 let tempQuestionsBatch = [];
 
 // FIXED ADMIN CREDENTIALS
@@ -23,7 +23,7 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
 
     if (inputField.type === "password") {
         inputField.type = "text";
-        emojiSpan.innerText = "🐵"; // Open Eyes Monkey at side
+        emojiSpan.innerText = "🐵"; // Open Eyes Monkey
         emojiSpan.classList.add("emoji-peek-anim");
 
         if (trackerSpan) {
@@ -32,7 +32,7 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
         }
     } else {
         inputField.type = "password";
-        emojiSpan.innerText = "🙈"; // Closed Eyes Monkey at side
+        emojiSpan.innerText = "🙈"; // Closed Eyes Monkey
         emojiSpan.classList.add("emoji-peek-anim");
 
         if (trackerSpan) {
@@ -61,7 +61,6 @@ function updateTrackerPos(inputId, trackerId) {
 
     const textWidth = context.measureText(text).width;
     
-    // Calculate position inside input
     const paddingLeft = 16; 
     const maxOffset = inputField.clientWidth - 70;
     const calculatedPos = Math.min(paddingLeft + textWidth, maxOffset);
@@ -69,7 +68,7 @@ function updateTrackerPos(inputId, trackerId) {
     trackerSpan.style.transform = `translateX(${calculatedPos}px)`;
 }
 
-// Dynamic Working Link Generator for GitHub Pages & Local Host
+// Dynamic Working Link Generator for GitHub Pages
 function copyCandidateLink() {
     const liveUrl = window.location.href.split('#')[0];
     const candidateRegLink = `${liveUrl}#register`;
@@ -84,13 +83,6 @@ function copyCandidateLink() {
         fallbackCopyText(candidateRegLink);
     }
 }
-
-// Auto Direct Candidate to Registration Form via URL Hash
-window.addEventListener('DOMContentLoaded', () => {
-    if (window.location.hash === '#register') {
-        showPage('register-page');
-    }
-});
 
 // Page Navigation
 function showPage(pageId) {
@@ -114,12 +106,15 @@ function openDashboard() {
     showPage('dashboard-page');
 }
 
-// Candidate Registration Handler
+// Candidate Registration Handler (Saves to Permanent Storage)
 function handleCandidateRegister(event) {
     event.preventDefault();
     const fullname = document.getElementById('regFullname').value.trim();
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
-    const password = document.getElementById('regPassword').value;
+    const password = document.getElementById('regPassword').value.trim();
+
+    // Latest LocalStorage Check
+    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 
     const exists = registeredCandidates.some(c => c.username === username);
     if (exists) {
@@ -136,8 +131,16 @@ function handleCandidateRegister(event) {
     };
 
     registeredCandidates.push(newCandidate);
+    
+    // Save permanently in browser storage
+    localStorage.setItem('portal_candidates', JSON.stringify(registeredCandidates));
+
     document.getElementById('registerForm').reset();
     showToast("✅ Registration successful! Please login.");
+    
+    // Auto switch to candidate login view
+    document.getElementById('userRole').value = 'candidate';
+    document.getElementById('username').value = username;
     showPage('login-page');
 }
 
@@ -145,23 +148,27 @@ function handleCandidateRegister(event) {
 function handleLogin(event) {
     event.preventDefault();
     const role = document.getElementById('userRole').value;
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
+    const username = document.getElementById('username').value.trim().toLowerCase();
+    const password = document.getElementById('password').value.trim();
 
     if (role === 'admin') {
-        if (username !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
+        const rawUsername = document.getElementById('username').value.trim();
+        if (rawUsername !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
             showToast("❌ Invalid Admin Username or Password!");
             return;
         }
     } 
 
     if (role === 'candidate') {
+        // Fetch fresh candidate data from LocalStorage
+        registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+
         const foundCandidate = registeredCandidates.find(
-            c => c.username === username.toLowerCase() && c.password === password
+            c => c.username.toLowerCase() === username && c.password === password
         );
         
         if (!foundCandidate) {
-            showToast("❌ Invalid Username or Password! Register first if new.");
+            showToast("❌ Invalid Username or Password!");
             return;
         }
     }
@@ -217,7 +224,7 @@ function addQuestionToCurrentBatch() {
     showToast("✅ Question added to draft!");
 }
 
-// Admin: Create New Test
+// Admin: Create New Test (Saves to Storage)
 function handleCreateTest(event) {
     event.preventDefault();
     const title = document.getElementById('testTitle').value;
@@ -231,6 +238,8 @@ function handleCreateTest(event) {
     };
 
     testsData.push(newTest);
+    localStorage.setItem('portal_tests', JSON.stringify(testsData));
+
     tempQuestionsBatch = [];
     document.getElementById('draft-questions-preview').innerText = '';
     document.getElementById('createTestForm').reset();
@@ -241,6 +250,9 @@ function handleCreateTest(event) {
 
 // Render Dynamic Stats & Modules
 function renderPortalData() {
+    registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
+    testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
+
     document.getElementById('stat-candidates').innerText = registeredCandidates.length;
     document.getElementById('stat-tests').innerText = testsData.length;
 
@@ -294,6 +306,7 @@ function renderPortalData() {
 // Admin: Delete Test
 function deleteTest(testId) {
     testsData = testsData.filter(t => t.id !== testId);
+    localStorage.setItem('portal_tests', JSON.stringify(testsData));
     renderPortalData();
     showToast("🗑️ Test removed!");
 }
@@ -332,3 +345,10 @@ function showToast(message) {
         toast.classList.add("hidden");
     }, 3000);
 }
+
+// Auto open candidate registration if hash exists in URL
+window.addEventListener('DOMContentLoaded', () => {
+    if (window.location.hash === '#register') {
+        showPage('register-page');
+    }
+});

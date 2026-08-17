@@ -16,7 +16,7 @@ function showPage(pageId) {
 // Protected Dashboard Opening
 function openDashboard() {
     if (!isLoggedIn) {
-        showToast("⚠️ Pehle Login karein!");
+        showToast("⚠️ Please login first to access the dashboard!!");
         showPage('login-page');
         return;
     }

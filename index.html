@@ -40,7 +40,12 @@
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" placeholder="Enter password" required>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" placeholder="Enter password" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji')" title="Toggle Password Visibility">
+                                <span id="login-pwd-emoji" class="emoji-icon">🙈</span>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">Login Now</button>
@@ -73,7 +78,12 @@
 
                     <div class="form-group">
                         <label for="regPassword">Set Password</label>
-                        <input type="password" id="regPassword" placeholder="Set password" required>
+                        <div class="password-wrapper">
+                            <input type="password" id="regPassword" placeholder="Set password" required>
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword', 'reg-pwd-emoji')" title="Toggle Password Visibility">
+                                <span id="reg-pwd-emoji" class="emoji-icon">🙈</span>
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">Register Account</button>
@@ -117,7 +127,7 @@
                 <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
             </div>
 
-            <!-- ADMIN ONLY: CREATE TEST SECTION -->
+            <!-- ADMIN ONLY: CREATE TEST & ADD QUESTIONS SECTION -->
             <div id="admin-test-section" class="card hidden">
                 <h2>Set & Create New Test</h2>
                 <form id="createTestForm" onsubmit="handleCreateTest(event)">
@@ -131,7 +141,50 @@
                         <input type="number" id="testDuration" placeholder="e.g. 60" required>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Publish Test</button>
+                    <!-- QUESTIONS ADDER FORM BLOCK -->
+                    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; padding-top: 15px;">
+                        <h3 style="text-align: left; margin-bottom: 12px; color: #818cf8;">Add Question to Test</h3>
+                        
+                        <div class="form-group">
+                            <label for="qText">Question Text</label>
+                            <input type="text" id="qText" placeholder="Enter question statement">
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label for="optA">Option A</label>
+                                <input type="text" id="optA" placeholder="Option A">
+                            </div>
+                            <div class="form-group">
+                                <label for="optB">Option B</label>
+                                <input type="text" id="optB" placeholder="Option B">
+                            </div>
+                            <div class="form-group">
+                                <label for="optC">Option C</label>
+                                <input type="text" id="optC" placeholder="Option C">
+                            </div>
+                            <div class="form-group">
+                                <label for="optD">Option D</label>
+                                <input type="text" id="optD" placeholder="Option D">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="correctOpt">Correct Option</label>
+                            <select id="correctOpt">
+                                <option value="A">Option A</option>
+                                <option value="B">Option B</option>
+                                <option value="C">Option C</option>
+                                <option value="D">Option D</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-outline" style="margin-bottom: 15px; width: 100%; border-color: #818cf8; color: #818cf8;" onclick="addQuestionToCurrentBatch()">➕ Add Question to Draft</button>
+                        
+                        <div id="draft-questions-preview" style="text-align: left; font-size: 0.85rem; color: #4ade80; margin-bottom: 15px;"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Publish Test with Questions</button>
                 </form>
 
                 <br>

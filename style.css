@@ -97,6 +97,7 @@ input:focus, select:focus {
     display: flex;
     align-items: center;
     width: 100%;
+    overflow: hidden;
 }
 
 .password-wrapper input {
@@ -117,6 +118,20 @@ input:focus, select:focus {
     align-items: center;
     justify-content: center;
     user-select: none;
+    z-index: 3;
+}
+
+/* Dynamic Caret Tracker Emoji Style */
+.tracker-emoji {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    pointer-events: none;
+    transition: transform 0.1s linear, opacity 0.2s ease;
+    z-index: 2;
+    opacity: 0.8;
 }
 
 /* Emoji Animation */

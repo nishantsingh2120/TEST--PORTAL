@@ -174,24 +174,28 @@ function renderAdminData() {
     subTableBody.innerHTML = '';
     
     if (examSubmissions.length === 0) {
-        subTableBody.innerHTML = '<tr><td colspan="5" style="padding:10px; color:#94a3b8;">No candidate submissions recorded yet.</td></tr>';
+        subTableBody.innerHTML = '<tr><td colspan="4" style="padding:10px; color:#94a3b8;">No candidate submissions recorded yet.</td></tr>';
     } else {
         examSubmissions.forEach(sub => {
             const row = document.createElement('tr');
             row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            row.style.cursor = "pointer";
+            row.className = "clickable-history";
+            
+            // Clicking candidate name opens audit report for admin
+            row.onclick = () => viewSubmissionDetails(sub, true);
+
             row.innerHTML = `
-                <td style="padding: 10px;"><strong>${sub.candidateName}</strong></td>
+                <td style="padding: 10px; color: #818cf8; text-decoration: underline;"><strong>${sub.candidateName}</strong></td>
                 <td style="padding: 10px;">${sub.examTitle}</td>
                 <td style="padding: 10px; color: #4ade80; font-weight: bold;">${sub.score} / ${sub.totalMarks}</td>
-                <td style="padding: 10px;">${sub.attemptedCount} / ${sub.totalQuestions}</td>
-                <td style="padding: 10px; font-size: 0.85rem; color: #94a3b8;">${sub.timestamp}</td>
+                <td style="padding: 10px; color: #94a3b8;">${sub.timeTaken || 'N/A'}</td>
             `;
             subTableBody.appendChild(row);
         });
     }
 }
 
-// RENDER CANDIDATE EXCLUSIVE HISTORY WITH CLICKABLE CARDS
 function renderCandidateHistory() {
     if (!currentLoggedInUser) return;
 
@@ -207,14 +211,13 @@ function renderCandidateHistory() {
     if (mySubmissions.length === 0) {
         historyContainer.innerHTML = '<p style="color: #94a3b8; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">You have not attempted any exams yet. Open a shared exam link to take a test.</p>';
     } else {
-        mySubmissions.forEach((sub, idx) => {
+        mySubmissions.forEach((sub) => {
             const historyCard = document.createElement('div');
             historyCard.className = "clickable-history";
             historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px; cursor: pointer;";
             
-            // Explicit click listener binding
             historyCard.addEventListener('click', () => {
-                viewSubmissionDetails(sub);
+                viewSubmissionDetails(sub, false);
             });
 
             historyCard.innerHTML = `
@@ -233,15 +236,15 @@ function renderCandidateHistory() {
     }
 }
 
-function viewSubmissionDetails(sub) {
+function viewSubmissionDetails(sub, isAdmin = false) {
     if (!sub || !sub.detailedAnswers) {
         showToast("⚠️ Detailed report not available for this record.");
         return;
     }
 
-    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
+    document.getElementById('result-cand-name').innerText = `Candidate: ${sub.candidateName} (${sub.candidateUsername})`;
     document.getElementById('result-total-score').innerText = `${sub.score} / ${sub.totalMarks}`;
-    document.getElementById('result-summary-stats').innerText = `Attempted: ${sub.attemptedCount} | Unattempted: ${sub.totalQuestions - sub.attemptedCount} | Time Taken: ${sub.timeTaken || 'N/A'}`;
+    document.getElementById('result-summary-stats').innerText = `Exam: ${sub.examTitle} | Attempted: ${sub.attemptedCount} | Unattempted: ${sub.totalQuestions - sub.attemptedCount} | Time Taken: ${sub.timeTaken || 'N/A'}`;
 
     let breakdownHtml = "";
     sub.detailedAnswers.forEach((ansObj, idx) => {
@@ -266,7 +269,7 @@ function viewSubmissionDetails(sub) {
                     ${statusBadge}
                 </div>
                 <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;">
-                    <strong>Your Answer:</strong> ${ansObj.isAttempted ? ansObj.candAnswer : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
+                    <strong>Candidate's Answer:</strong> ${ansObj.isAttempted ? ansObj.candAnswer : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
                 </div>
                 <div style="font-size: 0.9rem; color: #4ade80; margin-top: 6px; background: rgba(74, 222, 128, 0.1); padding: 6px 10px; border-radius: 4px;">
                     <strong>Correct Answer:</strong> ${ansObj.correctDisplay}
@@ -274,6 +277,15 @@ function viewSubmissionDetails(sub) {
             </div>
         `;
     });
+
+    // Add Return Button based on who is viewing
+    breakdownHtml += `
+        <div style="margin-top: 20px; text-align: center;">
+            <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="${isAdmin ? "showPage('admin-dashboard-page'); renderAdminData();" : "openDashboard();"}">
+                ← Back to Dashboard
+            </button>
+        </div>
+    `;
 
     document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
     showPage('exam-result-page');
@@ -478,6 +490,16 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
     document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
     document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Time Taken: ${timeTakenStr}`;
+    
+    // Append Return to Dashboard button for candidate post-submission view
+    breakdownHtml += `
+        <div style="margin-top: 20px; text-align: center;">
+            <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="openDashboard()">
+                ← Back to Dashboard
+            </button>
+        </div>
+    `;
+
     document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
 
     document.getElementById('main-navbar').style.display = 'flex';

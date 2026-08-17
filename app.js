@@ -1,63 +1,59 @@
-// Global Application State Controller
-const App = {
-    currentView: null,
-    queryParams: {},
+// Global Utility & Navigation Logic
 
-    init() {
-        this.parseQueryParams();
-        this.setupEventListeners();
-        
-        // Detect view based on URL parameter ?test=SHARECODE
-        if (this.queryParams.test) {
-            CandidateExam.init(this.queryParams.test);
-        } else {
-            Admin.init();
-        }
-    },
+function showView(viewId) {
+    // Hide all view sections
+    const views = document.querySelectorAll('.view-section');
+    views.forEach(view => {
+        view.classList.add('hidden');
+    });
 
-    parseQueryParams() {
-        const params = new URLSearchParams(window.location.search);
-        for (const [key, value] of params.entries()) {
-            this.queryParams[key] = value;
-        }
-    },
+    // Show target view section
+    const targetView = document.getElementById(viewId);
+    if (targetView) {
+        targetView.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    } else {
+        console.error("View not found: " + viewId);
+    }
+}
 
-    switchView(viewId) {
-        document.querySelectorAll('.view-panel').forEach(panel => {
-            panel.classList.add('hidden');
-        });
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        alert(message);
+        return;
+    }
 
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.classList.remove('hidden');
-            this.currentView = viewId;
-        }
-    },
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerText = message;
 
-    showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerText = message;
-        container.appendChild(toast);
+    toastContainer.appendChild(toast);
 
-        setTimeout(() => {
-            toast.remove();
-        }, 4000);
-    },
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
 
-    setupEventListeners() {
-        document.getElementById('nav-admin-login-btn')?.addEventListener('click', () => {
-            App.switchView('view-admin-login');
-        });
+// Navigation Events
+document.addEventListener('DOMContentLoaded', () => {
+    // Brand link to home
+    const brand = document.querySelector('.navbar-brand');
+    if (brand) {
+        brand.addEventListener('click', () => showView('view-welcome'));
+    }
 
-        document.getElementById('logout-btn')?.addEventListener('click', () => {
-            Admin.logout();
+    // Logout Button Event
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('nav-admin-login-btn').classList.remove('hidden');
+            showToast("Logged out successfully", "info");
+            showView('view-welcome');
         });
     }
-};
-
-// Application Bootstrap
-document.addEventListener('DOMContentLoaded', () => {
-    App.init();
 });

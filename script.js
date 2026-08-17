@@ -2,15 +2,38 @@
 let isLoggedIn = false;
 let currentUserRole = "";
 
-// Dynamic Data Arrays (Initially Empty)
+// Dynamic Data Arrays
 let testsData = [];
 let registeredCandidates = [];
+let tempQuestionsBatch = [];
 
 // FIXED ADMIN CREDENTIALS
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
     password: "Nikki812616"
 };
+
+// Password Toggle & Animated Emoji Handler
+function togglePasswordVisibility(inputId, emojiId) {
+    const inputField = document.getElementById(inputId);
+    const emojiSpan = document.getElementById(emojiId);
+
+    if (!inputField || !emojiSpan) return;
+
+    if (inputField.type === "password") {
+        inputField.type = "text";
+        emojiSpan.innerText = "👁️"; // Eyes watching
+        emojiSpan.classList.add("emoji-peek-anim");
+    } else {
+        inputField.type = "password";
+        emojiSpan.innerText = "🙈"; // Eyes covered
+        emojiSpan.classList.add("emoji-peek-anim");
+    }
+
+    setTimeout(() => {
+        emojiSpan.classList.remove("emoji-peek-anim");
+    }, 300);
+}
 
 // Page Navigation
 function showPage(pageId) {
@@ -41,14 +64,12 @@ function handleCandidateRegister(event) {
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
     const password = document.getElementById('regPassword').value;
 
-    // Check if username already exists
     const exists = registeredCandidates.some(c => c.username === username);
     if (exists) {
         showToast("❌ Username already taken! Choose another.");
         return;
     }
 
-    // Save candidate registration
     const newCandidate = {
         id: `CAND-${100 + registeredCandidates.length + 1}`,
         name: fullname,
@@ -70,7 +91,6 @@ function handleLogin(event) {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
 
-    // 1. Admin Verification Guard
     if (role === 'admin') {
         if (username !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
             showToast("❌ Invalid Admin Username or Password!");
@@ -78,7 +98,6 @@ function handleLogin(event) {
         }
     } 
 
-    // 2. Candidate Verification Guard
     if (role === 'candidate') {
         const foundCandidate = registeredCandidates.find(
             c => c.username === username.toLowerCase() && c.password === password
@@ -90,13 +109,11 @@ function handleLogin(event) {
         }
     }
 
-    // Success Authentication
     isLoggedIn = true;
     currentUserRole = role;
 
     document.getElementById('welcome-text').innerText = `Welcome back, ${username} (${role.toUpperCase()})`;
 
-    // Show/Hide Role Specific Modules
     const adminSection = document.getElementById('admin-test-section');
     const candidateSection = document.getElementById('candidates-directory-section');
 
@@ -113,13 +130,63 @@ function handleLogin(event) {
     showPage('dashboard-page');
 }
 
+// Add Question to Draft Batch
+function addQuestionToCurrentBatch() {
+    const qText = document.getElementById('qText').value.trim();
+    const optA = document.getElementById('optA').value.trim();
+    const optB = document.getElementById('optB').value.trim();
+    const optC = document.getElementById('optC').value.trim();
+    const optD = document.getElementById('optD').value.trim();
+    const correctOpt = document.getElementById('correctOpt').value;
+
+    if (!qText || !optA || !optB || !optC || !optD) {
+        showToast("⚠️ Please fill question and all 4 options!");
+        return;
+    }
+
+    tempQuestionsBatch.push({
+        question: qText,
+        options: { A: optA, B: optB, C: optC, D: optD },
+        answer: correctOpt
+    });
+
+    document.getElementById('qText').value = '';
+    document.getElementById('optA').value = '';
+    document.getElementById('optB').value = '';
+    document.getElementById('optC').value = '';
+    document.getElementById('optD').value = '';
+
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to this draft test.`;
+    showToast("✅ Question added to draft!");
+}
+
+// Admin: Create New Test
+function handleCreateTest(event) {
+    event.preventDefault();
+    const title = document.getElementById('testTitle').value;
+    const duration = document.getElementById('testDuration').value;
+
+    const newTest = {
+        id: Date.now(),
+        title: title,
+        duration: duration,
+        questions: [...tempQuestionsBatch]
+    };
+
+    testsData.push(newTest);
+    tempQuestionsBatch = [];
+    document.getElementById('draft-questions-preview').innerText = '';
+    document.getElementById('createTestForm').reset();
+
+    renderPortalData();
+    showToast("✅ Test published with questions!");
+}
+
 // Render Dynamic Stats & Modules
 function renderPortalData() {
-    // 1. Render Stats dynamically
     document.getElementById('stat-candidates').innerText = registeredCandidates.length;
     document.getElementById('stat-tests').innerText = testsData.length;
 
-    // 2. Render Tests List
     const testContainer = document.getElementById('test-list-container');
     testContainer.innerHTML = '';
 
@@ -137,7 +204,7 @@ function renderPortalData() {
             testRow.innerHTML = `
                 <div>
                     <strong>${test.title}</strong>
-                    <div style="font-size: 0.85rem; color: #94a3b8;">Duration: ${test.duration} Mins</div>
+                    <div style="font-size: 0.85rem; color: #94a3b8;">Duration: ${test.duration} Mins | Questions: ${test.questions ? test.questions.length : 0}</div>
                 </div>
                 ${deleteBtnHtml}
             `;
@@ -145,7 +212,6 @@ function renderPortalData() {
         });
     }
 
-    // 3. Render Candidate Directory Table
     const tableBody = document.getElementById('candidate-table-body');
     const emptyMsg = document.getElementById('no-candidate-msg');
     tableBody.innerHTML = '';
@@ -168,24 +234,6 @@ function renderPortalData() {
     }
 }
 
-// Admin: Create New Test
-function handleCreateTest(event) {
-    event.preventDefault();
-    const title = document.getElementById('testTitle').value;
-    const duration = document.getElementById('testDuration').value;
-
-    const newTest = {
-        id: Date.now(),
-        title: title,
-        duration: duration
-    };
-
-    testsData.push(newTest);
-    document.getElementById('createTestForm').reset();
-    renderPortalData();
-    showToast("✅ New Test set successfully!");
-}
-
 // Admin: Delete Test
 function deleteTest(testId) {
     testsData = testsData.filter(t => t.id !== testId);
@@ -202,7 +250,7 @@ function handleLogout() {
     showPage('login-page');
 }
 
-// Copy Link & Trigger Toast
+// Copy Link
 function copyLink(urlToCopy) {
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(urlToCopy).then(() => {
@@ -215,7 +263,6 @@ function copyLink(urlToCopy) {
     }
 }
 
-// Fallback method for copy
 function fallbackCopyText(text) {
     const tempInput = document.createElement("input");
     tempInput.value = text;

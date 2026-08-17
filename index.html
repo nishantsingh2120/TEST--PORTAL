@@ -1,803 +1,436 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test Portal</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      background: #f4f7fb;
-      color: #111827;
-    }
-
-    header {
-      background: #111827;
-      color: white;
-      padding: 18px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 35px auto;
-      padding: 20px;
-    }
-
-    .box {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 5px 25px rgba(0,0,0,.08);
-      margin-bottom: 25px;
-    }
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0 15px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    button {
-      border: none;
-      background: #2563eb;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 15px;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    .danger {
-      background: #dc2626;
-    }
-
-    .danger:hover {
-      background: #b91c1c;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .message {
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 15px;
-      background: #eef2ff;
-    }
-
-    .question-box {
-      border: 1px solid #e5e7eb;
-      padding: 20px;
-      border-radius: 10px;
-      margin-top: 15px;
-    }
-
-    .question-box h3 {
-      margin-bottom: 12px;
-    }
-
-    .top-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .test-card {
-      border: 1px solid #e5e7eb;
-      padding: 18px;
-      border-radius: 10px;
-      margin-top: 15px;
-    }
-
-    .test-card small {
-      color: #6b7280;
-    }
-
-    .share-link {
-      background: #f3f4f6;
-      padding: 10px;
-      border-radius: 7px;
-      word-break: break-all;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Examination & Remote Proctoring System</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- MediaPipe Face Mesh & Camera Utils CDN for Proctored Face Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
-
 <body>
 
-<header>
-  <h1>📝 Test Portal</h1>
-  <div id="headerRight"></div>
-</header>
-
-<div class="container">
-
-  <!-- LOGIN -->
-  <section id="loginSection" class="box">
-    <h2>Admin Login</h2>
-
-    <input
-      type="email"
-      id="email"
-      placeholder="Admin Email"
-    >
-
-    <input
-      type="password"
-      id="password"
-      placeholder="Password"
-    >
-
-    <button onclick="login()">Login</button>
-
-    <div id="loginMessage" class="message hidden"></div>
-  </section>
-
-
-  <!-- DASHBOARD -->
-  <section id="dashboardSection" class="hidden">
-
-    <div class="box">
-      <div class="top-actions">
-        <button onclick="showCreateTest()">➕ Create New Test</button>
-        <button class="danger" onclick="logout()">Logout</button>
-      </div>
-    </div>
-
-
-    <!-- CREATE TEST -->
-    <div id="createTestBox" class="box hidden">
-
-      <h2>Create Test</h2>
-
-      <label>Test Title</label>
-      <input
-        type="text"
-        id="testTitle"
-        placeholder="Example: General Knowledge Test"
-      >
-
-      <label>Description</label>
-      <textarea
-        id="testDescription"
-        placeholder="Test description"
-      ></textarea>
-
-      <label>Duration (minutes)</label>
-      <input
-        type="number"
-        id="testDuration"
-        value="30"
-        min="1"
-      >
-
-      <label>Negative Marking</label>
-      <input
-        type="number"
-        id="negativeMarking"
-        value="0"
-        min="0"
-        step="0.25"
-      >
-
-      <hr style="margin:25px 0;">
-
-      <h2>Questions</h2>
-
-      <div id="questionsContainer"></div>
-
-      <button onclick="addQuestion()">
-        ➕ Add Question
-      </button>
-
-      <br><br>
-
-      <button onclick="createTest()">
-        🚀 Create & Save Test
-      </button>
-
-      <button onclick="hideCreateTest()">
-        Cancel
-      </button>
-
-      <div id="createMessage" class="message hidden"></div>
-
-    </div>
-
-
-    <!-- TEST LIST -->
-    <div class="box">
-      <h2>My Tests</h2>
-      <div id="testsList">
-        Loading...
-      </div>
-    </div>
-
-  </section>
-
-</div>
-
-
-<script>
-
-  const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-
-  // -----------------------------
-  // INITIAL CHECK
-  // -----------------------------
-
-  checkUser();
-
-
-  async function checkUser() {
-
-    const {
-      data: { user }
-    } = await db.auth.getUser();
-
-    if (user) {
-      showDashboard();
-    } else {
-      showLogin();
-    }
-  }
-
-
-  // -----------------------------
-  // LOGIN
-  // -----------------------------
-
-  async function login() {
-
-    const email =
-      document.getElementById("email").value.trim();
-
-    const password =
-      document.getElementById("password").value;
-
-    const message =
-      document.getElementById("loginMessage");
-
-    if (!email || !password) {
-      showMessage(
-        message,
-        "Please enter email and password."
-      );
-      return;
-    }
-
-    const {
-      data,
-      error
-    } = await db.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (error) {
-      showMessage(message, error.message);
-      return;
-    }
-
-    showDashboard();
-  }
-
-
-  // -----------------------------
-  // LOGOUT
-  // -----------------------------
-
-  async function logout() {
-
-    await db.auth.signOut();
-
-    showLogin();
-
-  }
-
-
-  // -----------------------------
-  // SHOW LOGIN
-  // -----------------------------
-
-  function showLogin() {
-
-    document
-      .getElementById("loginSection")
-      .classList.remove("hidden");
-
-    document
-      .getElementById("dashboardSection")
-      .classList.add("hidden");
-
-    document
-      .getElementById("headerRight")
-      .innerHTML = "";
-
-  }
-
-
-  // -----------------------------
-  // SHOW DASHBOARD
-  // -----------------------------
-
-  async function showDashboard() {
-
-    document
-      .getElementById("loginSection")
-      .classList.add("hidden");
-
-    document
-      .getElementById("dashboardSection")
-      .classList.remove("hidden");
-
-    document
-      .getElementById("headerRight")
-      .innerHTML = "Admin";
-
-    await loadTests();
-
-  }
-
-
-  // -----------------------------
-  // CREATE TEST UI
-  // -----------------------------
-
-  function showCreateTest() {
-
-    document
-      .getElementById("createTestBox")
-      .classList.remove("hidden");
-
-    document
-      .getElementById("questionsContainer")
-      .innerHTML = "";
-
-    addQuestion();
-
-  }
-
-
-  function hideCreateTest() {
-
-    document
-      .getElementById("createTestBox")
-      .classList.add("hidden");
-
-  }
-
-
-  // -----------------------------
-  // ADD QUESTION
-  // -----------------------------
-
-  function addQuestion() {
-
-    const container =
-      document.getElementById("questionsContainer");
-
-    const number =
-      container.children.length + 1;
-
-    const box =
-      document.createElement("div");
-
-    box.className = "question-box";
-
-    box.innerHTML = `
-
-      <h3>Question ${number}</h3>
-
-      <textarea
-        class="questionText"
-        placeholder="Enter question"
-      ></textarea>
-
-      <input
-        class="option"
-        placeholder="Option A"
-      >
-
-      <input
-        class="option"
-        placeholder="Option B"
-      >
-
-      <input
-        class="option"
-        placeholder="Option C"
-      >
-
-      <input
-        class="option"
-        placeholder="Option D"
-      >
-
-      <select class="correctAnswer">
-        <option value="">Select Correct Answer</option>
-        <option value="A">A</option>
-        <option value="B">B</option>
-        <option value="C">C</option>
-        <option value="D">D</option>
-      </select>
-
-      <input
-        class="questionMarks"
-        type="number"
-        value="1"
-        min="0"
-        step="0.25"
-        placeholder="Marks"
-      >
-
-      <button
-        class="danger"
-        onclick="this.parentElement.remove()"
-      >
-        Remove Question
-      </button>
-
-    `;
-
-    container.appendChild(box);
-
-  }
-
-
-  // -----------------------------
-  // CREATE TEST
-  // -----------------------------
-
-  async function createTest() {
-
-    const message =
-      document.getElementById("createMessage");
-
-    const title =
-      document.getElementById("testTitle").value.trim();
-
-    const description =
-      document.getElementById("testDescription").value.trim();
-
-    const duration =
-      Number(document.getElementById("testDuration").value);
-
-    const negative =
-      Number(document.getElementById("negativeMarking").value);
-
-    const questionBoxes =
-      document.querySelectorAll(".question-box");
-
-
-    if (!title) {
-      showMessage(message, "Please enter test title.");
-      return;
-    }
-
-    if (questionBoxes.length === 0) {
-      showMessage(message, "Add at least one question.");
-      return;
-    }
-
-
-    const shareCode =
-      generateShareCode();
-
-
-    // Create test first
-    const {
-      data: test,
-      error: testError
-    } = await db
-      .from("tests")
-      .insert({
-        title: title,
-        description: description,
-        duration_minutes: duration,
-        negative_marking: negative,
-        total_marks: 0,
-        is_published: false,
-        share_code: shareCode
-      })
-      .select()
-      .single();
-
-
-    if (testError) {
-
-      showMessage(
-        message,
-        "Test creation failed: " +
-        testError.message
-      );
-
-      return;
-    }
-
-
-    let totalMarks = 0;
-
-
-    // Add questions
-    for (let i = 0; i < questionBoxes.length; i++) {
-
-      const box = questionBoxes[i];
-
-      const questionText =
-        box.querySelector(".questionText").value.trim();
-
-      const optionInputs =
-        box.querySelectorAll(".option");
-
-      const correctAnswer =
-        box.querySelector(".correctAnswer").value;
-
-      const marks =
-        Number(
-          box.querySelector(".questionMarks").value
-        );
-
-
-      const options = [
-        optionInputs[0].value.trim(),
-        optionInputs[1].value.trim(),
-        optionInputs[2].value.trim(),
-        optionInputs[3].value.trim()
-      ];
-
-
-      if (
-        !questionText ||
-        options.some(x => !x) ||
-        !correctAnswer
-      ) {
-
-        showMessage(
-          message,
-          "Please complete Question " +
-          (i + 1)
-        );
-
-        return;
-      }
-
-
-      totalMarks += marks;
-
-
-      const {
-        error: questionError
-      } = await db
-        .from("questions")
-        .insert({
-
-          test_id: test.id,
-
-          question_number: i + 1,
-
-          question_text: questionText,
-
-          question_type: "mcq",
-
-          options: {
-            A: options[0],
-            B: options[1],
-            C: options[2],
-            D: options[3]
-          },
-
-          correct_answer: correctAnswer,
-
-          marks: marks
-
-        });
-
-
-      if (questionError) {
-
-        showMessage(
-          message,
-          "Question " +
-          (i + 1) +
-          " failed: " +
-          questionError.message
-        );
-
-        return;
-      }
-
-    }
-
-
-    // Update total marks
-    await db
-      .from("tests")
-      .update({
-        total_marks: totalMarks
-      })
-      .eq("id", test.id);
-
-
-    showMessage(
-      message,
-      "✅ Test created successfully!"
-    );
-
-
-    document.getElementById("testTitle").value = "";
-    document.getElementById("testDescription").value = "";
-    document.getElementById("questionsContainer").innerHTML = "";
-
-
-    await loadTests();
-
-  }
-
-
-  // -----------------------------
-  // LOAD TESTS
-  // -----------------------------
-
-  async function loadTests() {
-
-    const list =
-      document.getElementById("testsList");
-
-    const {
-      data,
-      error
-    } = await db
-      .from("tests")
-      .select("*")
-      .order("created_at", {
-        ascending: false
-      });
-
-
-    if (error) {
-
-      list.innerHTML =
-        "<p>Unable to load tests.</p>";
-
-      return;
-    }
-
-
-    if (!data || data.length === 0) {
-
-      list.innerHTML =
-        "<p>No tests created yet.</p>";
-
-      return;
-    }
-
-
-    list.innerHTML = "";
-
-
-    data.forEach(test => {
-
-      const card =
-        document.createElement("div");
-
-      card.className = "test-card";
-
-
-      const shareUrl =
-        window.location.origin +
-        window.location.pathname +
-        "?test=" +
-        test.share_code;
-
-
-      card.innerHTML = `
-
-        <h3>${escapeHtml(test.title)}</h3>
-
-        <small>
-          Duration: ${test.duration_minutes} minutes
-          |
-          Marks: ${test.total_marks}
-        </small>
-
-        <p style="margin-top:10px;">
-          Status:
-          <strong>
-            ${test.is_published ? "Published" : "Draft"}
-          </strong>
-        </p>
-
-        <div class="share-link">
-          ${shareUrl}
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">🛡️</span>
+            <span id="nav-title">ONLINE EXAMINATION PORTAL</span>
         </div>
+        <div id="auth-status-container">
+            <span id="user-display" class="hidden"></span>
+            <button id="logout-btn" class="btn btn-secondary btn-sm hidden">Logout</button>
+            <button id="nav-admin-login-btn" class="btn btn-outline btn-sm">Admin Access</button>
+        </div>
+    </header>
 
-      `;
+    <!-- Global Alert / Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 
-      list.appendChild(card);
+    <!-- MAIN VIEW CONTAINERS (Single Page Architecture) -->
+    <main class="container">
 
-    });
+        <!-- 1. ADMIN LOGIN VIEW -->
+        <section id="view-admin-login" class="view-panel hidden">
+            <div class="card auth-card">
+                <h2>Admin Authentication</h2>
+                <p class="subtitle">Log in to manage exams, view attempts, and monitor proctoring logs.</p>
+                <form id="admin-login-form">
+                    <div class="form-group">
+                        <label for="admin-email">Email Address</label>
+                        <input type="email" id="admin-email" required placeholder="admin@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-password">Password</label>
+                        <input type="password" id="admin-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                </form>
+            </div>
+        </section>
 
-  }
+        <!-- 2. ADMIN DASHBOARD VIEW -->
+        <section id="view-admin-dashboard" class="view-panel hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Control Panel</h1>
+                    <p class="subtitle">Overview of exams, performance metrics, and compliance.</p>
+                </div>
+                <button id="btn-open-create-test" class="btn btn-primary">+ Create New Test</button>
+            </div>
 
+            <!-- Dashboard Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-total-tests">0</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-published-tests">0</div>
+                    <div class="stat-label">Published Tests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-total-attempts">0</div>
+                    <div class="stat-label">Total Attempts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-avg-score">0%</div>
+                    <div class="stat-label">Average Pass Rate</div>
+                </div>
+            </div>
 
-  // -----------------------------
-  // SHARE CODE
-  // -----------------------------
+            <!-- Navigation Tabs -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="tab-tests">Tests Management</button>
+                <button class="tab-btn" data-tab="tab-results">Candidate Attempts & Results</button>
+            </div>
 
-  function generateShareCode() {
+            <!-- Tab Content: Test List -->
+            <div id="tab-tests" class="tab-content active">
+                <div class="table-responsive card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Test Title</th>
+                                <th>Duration</th>
+                                <th>Questions</th>
+                                <th>Total Marks</th>
+                                <th>Status</th>
+                                <th>Share Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tests-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-    return Math.random()
-      .toString(36)
-      .substring(2, 10)
-      .toUpperCase();
+            <!-- Tab Content: Candidate Results -->
+            <div id="tab-results" class="tab-content">
+                <div class="table-responsive card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Test</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Violations</th>
+                                <th>Submitted At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
 
-  }
+        <!-- 3. TEST BUILDER / EDIT VIEW (ADMIN) -->
+        <section id="view-test-builder" class="view-panel hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 id="builder-title">Create New Examination</h2>
+                    <p class="subtitle">Configure exam parameters and questions.</p>
+                </div>
+                <button id="btn-back-dashboard" class="btn btn-secondary">← Back to Dashboard</button>
+            </div>
 
+            <div class="card">
+                <h3>General Settings</h3>
+                <form id="test-form">
+                    <input type="hidden" id="test-id">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="test-title">Test Title</label>
+                            <input type="text" id="test-title" required placeholder="e.g. Advanced Cybersecurity Evaluation">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="test-duration">Duration (Minutes)</label>
+                            <input type="number" id="test-duration" min="1" value="30" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="test-description">Instructions & Description</label>
+                        <textarea id="test-description" rows="3" placeholder="Provide instructions for candidates..."></textarea>
+                    </div>
+                    <div class="form-row checkbox-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="test-negative-marking">
+                            Enable Negative Marking
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="test-is-published">
+                            Publish Test Immediately
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success">Save Exam Configurations</button>
+                </form>
+            </div>
 
-  // -----------------------------
-  // MESSAGE
-  // -----------------------------
+            <!-- Question Editor Section -->
+            <div id="question-management-section" class="card margin-top hidden">
+                <div class="dashboard-header">
+                    <h3>Questions List</h3>
+                    <button id="btn-add-question" class="btn btn-primary">+ Add Question</button>
+                </div>
+                <div id="questions-list-container" class="questions-list">
+                    <!-- Dynamic Question Cards -->
+                </div>
+            </div>
+        </section>
 
-  function showMessage(element, text) {
+        <!-- 4. CANDIDATE EXAMINATION ENTRY VIEW -->
+        <section id="view-candidate-entry" class="view-panel hidden">
+            <div class="card candidate-card">
+                <div class="exam-header-badge">OFFICIAL ONLINE EXAMINATION</div>
+                <h1 id="entry-test-title">Loading Examination...</h1>
+                <p id="entry-test-description" class="exam-desc"></p>
 
-    element.textContent = text;
+                <div class="exam-meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Duration</span>
+                        <span class="meta-val" id="entry-duration">-- mins</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Total Questions</span>
+                        <span class="meta-val" id="entry-questions-count">--</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Total Marks</span>
+                        <span class="meta-val" id="entry-total-marks">--</span>
+                    </div>
+                </div>
 
-    element.classList.remove("hidden");
+                <div class="rules-box">
+                    <h4>🔒 Integrity Rules & Compliance Requirements</h4>
+                    <ul>
+                        <li><strong>Proctored Environment:</strong> Camera access is mandatory throughout the test.</li>
+                        <li><strong>Fullscreen Mandatory:</strong> Exiting fullscreen triggers a compliance violation.</li>
+                        <li><strong>Tab Focus:</strong> Navigating away from the active tab is logged immediately.</li>
+                        <li><strong>Violation Threshold:</strong> Reaching 3 violations results in automatic submission.</li>
+                    </ul>
+                </div>
 
-  }
+                <form id="candidate-start-form">
+                    <div class="form-group">
+                        <label for="candidate-name">Full Name *</label>
+                        <input type="text" id="candidate-name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="candidate-email">Email Address (Optional)</label>
+                        <input type="email" id="candidate-email" placeholder="john@example.com">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg">Begin Examination Session</button>
+                </form>
+            </div>
+        </section>
 
+        <!-- 5. PROCTORED EXAMINATION WORKSPACE -->
+        <section id="view-exam-workspace" class="view-panel hidden">
+            <!-- Top Exam Bar -->
+            <div class="exam-topbar">
+                <div>
+                    <span id="exam-workspace-title" class="exam-workspace-title">Exam Title</span>
+                    <span id="exam-workspace-candidate" class="candidate-tag">Candidate Name</span>
+                </div>
+                <div class="proctor-status-indicator">
+                    <span class="pulse-dot"></span> Proctoring Active
+                </div>
+                <div class="timer-box">
+                    <span>Time Left:</span>
+                    <span id="exam-timer" class="timer-display">00:00:00</span>
+                </div>
+            </div>
 
-  // -----------------------------
-  // ESCAPE HTML
-  // -----------------------------
+            <div class="exam-layout">
+                <!-- Question Column -->
+                <div class="exam-main-content card">
+                    <div class="question-header">
+                        <span id="question-number-badge" class="badge">Question 1</span>
+                        <span id="question-marks-badge" class="badge badge-outline">1 Mark</span>
+                    </div>
 
-  function escapeHtml(text) {
+                    <div id="question-text" class="question-text-content">
+                        Loading Question Text...
+                    </div>
 
-    const div =
-      document.createElement("div");
+                    <div id="options-container" class="options-group">
+                        <!-- Options generated dynamically -->
+                    </div>
 
-    div.textContent = text;
+                    <div class="exam-actions">
+                        <button id="btn-prev-question" class="btn btn-secondary">Previous</button>
+                        <button id="btn-next-question" class="btn btn-secondary">Next</button>
+                        <button id="btn-submit-exam" class="btn btn-danger align-right">Submit Test</button>
+                    </div>
+                </div>
 
-    return div.innerHTML;
+                <!-- Sidebar: Proctoring Video + Palette -->
+                <div class="exam-sidebar">
+                    <!-- Live Camera Feed Widget -->
+                    <div class="card camera-card">
+                        <div class="camera-wrapper">
+                            <video id="webcam-preview" autoplay playsinline muted></video>
+                            <canvas id="face-canvas"></canvas>
+                            <div id="proctor-overlay-warning" class="proctor-overlay hidden">
+                                ⚠️ NO FACE DETECTED
+                            </div>
+                        </div>
+                        <div class="violation-counter-box">
+                            <span>Compliance Violations:</span>
+                            <span id="violation-count-badge" class="badge badge-warning">0 / 3</span>
+                        </div>
+                    </div>
 
-  }
+                    <!-- Question Palette Navigation -->
+                    <div class="card palette-card">
+                        <h4>Question Palette</h4>
+                        <div id="question-palette" class="palette-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <div class="palette-legend">
+                            <span class="legend-item"><span class="legend-box answered"></span> Answered</span>
+                            <span class="legend-item"><span class="legend-box unanswered"></span> Unanswered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-</script>
+        <!-- 6. RESULT SUMMARY VIEW -->
+        <section id="view-result-summary" class="view-panel hidden">
+            <div class="card result-card">
+                <div class="result-icon">🎉</div>
+                <h2>Examination Completed</h2>
+                <p class="subtitle">Your answers have been securely recorded and evaluated.</p>
 
+                <div class="score-display">
+                    <div class="score-main" id="result-score-text">0 / 0</div>
+                    <div class="percentage-badge" id="result-percentage-text">0%</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value text-success" id="result-correct">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-danger" id="result-wrong">0</div>
+                        <div class="stat-label">Incorrect Answers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-muted" id="result-unanswered">0</div>
+                        <div class="stat-label">Unanswered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="result-time-taken">0s</div>
+                        <div class="stat-label">Time Spent</div>
+                    </div>
+                </div>
+
+                <div id="result-status-message" class="alert-box alert-info margin-top">
+                    Submission recorded successfully.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- QUESTION EDITOR MODAL (ADMIN) -->
+    <div id="modal-question" class="modal hidden">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h3 id="modal-question-title">Add New Question</h3>
+                <span class="modal-close" id="btn-close-qmodal">&times;</span>
+            </div>
+            <form id="question-form">
+                <input type="hidden" id="q-id">
+                <div class="form-group">
+                    <label for="q-text">Question Prompt</label>
+                    <textarea id="q-text" rows="3" required placeholder="Enter question statement..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="q-type">Type</label>
+                        <select id="q-type">
+                            <option value="MCQ">Multiple Choice (MCQ)</option>
+                            <option value="TRUE_FALSE">True / False</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="q-marks">Marks Allocated</label>
+                        <input type="number" id="q-marks" min="0.5" step="0.5" value="1" required>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="q-neg-marks">Deduction (Negative)</label>
+                        <input type="number" id="q-neg-marks" min="0" step="0.25" value="0">
+                    </div>
+                </div>
+
+                <!-- MCQ Options Panel -->
+                <div id="mcq-options-panel">
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="q-op-a">Option A</label>
+                            <input type="text" id="q-op-a" class="mcq-input">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="q-op-b">Option B</label>
+                            <input type="text" id="q-op-b" class="mcq-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="q-op-c">Option C</label>
+                            <input type="text" id="q-op-c" class="mcq-input">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="q-op-d">Option D</label>
+                            <input type="text" id="q-op-d" class="mcq-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="q-correct">Correct Answer Key</label>
+                    <select id="q-correct" required>
+                        <!-- Dynamic Options populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-qmodal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ATTEMPT DETAILS MODAL (ADMIN INSPECTION) -->
+    <div id="modal-attempt-details" class="modal hidden">
+        <div class="modal-content card modal-lg">
+            <div class="modal-header">
+                <h3>Candidate Attempt Inspection</h3>
+                <span class="modal-close" id="btn-close-attempt-modal">&times;</span>
+            </div>
+            <div id="attempt-modal-body">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Files -->
+    <script src="config.js"></script>
+    <script src="camera.js"></script>
+    <script src="admin.js"></script>
+    <script src="exam.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

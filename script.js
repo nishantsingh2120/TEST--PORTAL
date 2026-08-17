@@ -14,18 +14,23 @@ let examTimerInterval = null;
 let examTimeRemaining = 0;
 let examStartTimeStamp = null;
 
+let tabSwitchCount = 0;
+const MAX_ALLOWED_TAB_SWITCHES = 3;
+let autoSaveInterval = null;
+let canvasContext = null;
+let isDrawing = false;
+
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
     password: "Nikki812616"
 };
 
+// NAV & PAGE ROUTING
 function showPage(pageId) {
-    document.getElementById('login-page').classList.add('hidden');
-    document.getElementById('register-page').classList.add('hidden');
-    document.getElementById('admin-dashboard-page').classList.add('hidden');
-    document.getElementById('candidate-dashboard-page').classList.add('hidden');
-    document.getElementById('exam-attempt-page').classList.add('hidden');
-    document.getElementById('exam-result-page').classList.add('hidden');
+    ['login-page', 'register-page', 'admin-dashboard-page', 'candidate-dashboard-page', 'exam-attempt-page', 'exam-result-page'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
 
     const activePage = document.getElementById(pageId);
     if (activePage) activePage.classList.remove('hidden');
@@ -61,6 +66,7 @@ function toggleQuestionTypeInputs() {
     }
 }
 
+// SINGLE QUESTION MANUAL ADDITION
 function addQuestionToCurrentBatch() {
     const qType = document.getElementById('qType').value;
     const qText = document.getElementById('qText').value.trim();
@@ -106,43 +112,32 @@ function addQuestionToCurrentBatch() {
     document.getElementById('optD').value = '';
     document.getElementById('textCorrectAns').value = '';
 
-    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper.`;
-    showToast("✅ Question added!");
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper draft.`;
+    showToast("✅ Question added to draft!");
 }
 
-/* ================= SMART BULK QUESTION PARSER LOGIC ================= */
-
+// SMART BULK QUESTION PARSER
 function previewBulkEntries() {
-    const bulkInput = document.getElementById('bulkQuestionsInput');
-    const rawText = bulkInput ? bulkInput.value.trim() : '';
-
+    const rawText = document.getElementById('bulkQuestionsInput').value.trim();
     if (!rawText) {
-        showToast("⚠️ Please paste question text first!");
+        showToast("⚠️ Please paste questions text first!");
         return;
     }
 
     parsedBulkBatch = parseBulkText(rawText);
-
     const previewContainer = document.getElementById('bulk-preview-container');
-    if (!previewContainer) return;
 
     if (parsedBulkBatch.length === 0) {
-        previewContainer.innerHTML = '<p style="color: #ef4444; margin-top: 10px;">⚠️ No valid questions could be parsed. Check your format.</p>';
+        previewContainer.innerHTML = '<p style="color: #ef4444; margin-top: 10px;">⚠️ No valid questions parsed. Verify your format.</p>';
         return;
     }
 
     let html = `<p style="color: #4ade80; margin-bottom: 12px; font-weight: bold;">✔ Parsed ${parsedBulkBatch.length} Question(s) successfully:</p>`;
-    
     parsedBulkBatch.forEach((q, idx) => {
         let optionsHtml = '';
         if (q.type === 'mcq' && q.options) {
-            optionsHtml = `
-                <div style="font-size: 0.85rem; color: #94a3b8; margin: 6px 0;">
-                    <b>A:</b> ${q.options.A} | <b>B:</b> ${q.options.B} | <b>C:</b> ${q.options.C} | <b>D:</b> ${q.options.D}
-                </div>
-            `;
+            optionsHtml = `<div style="font-size: 0.85rem; color: #94a3b8; margin: 6px 0;"><b>A:</b> ${q.options.A} | <b>B:</b> ${q.options.B} | <b>C:</b> ${q.options.C} | <b>D:</b> ${q.options.D}</div>`;
         }
-
         html += `
             <div class="parsed-q-card">
                 <span class="parsed-q-type-badge">${q.type.toUpperCase()} | ${q.marks} Mark(s)</span>
@@ -154,9 +149,7 @@ function previewBulkEntries() {
     });
 
     previewContainer.innerHTML = html;
-
-    const confirmBtn = document.getElementById('confirmBulkBtn');
-    if (confirmBtn) confirmBtn.classList.remove('hidden');
+    document.getElementById('confirmBulkBtn').classList.remove('hidden');
 }
 
 function parseBulkText(text) {
@@ -174,30 +167,19 @@ function parseBulkText(text) {
         let isMcq = false;
 
         lines.forEach((line) => {
-            // Check Marks
             const marksMatch = line.match(/(?:marks?|pts?|points?)\s*[:=-]\s*(\d+)/i);
-            if (marksMatch) {
-                marks = parseInt(marksMatch[1]) || 1;
-                return;
-            }
+            if (marksMatch) { marks = parseInt(marksMatch[1]) || 1; return; }
 
-            // Check Answer
             const ansMatch = line.match(/(?:ans|answer|correct)\s*[:=-]\s*(.+)/i);
-            if (ansMatch) {
-                answer = ansMatch[1].trim();
-                return;
-            }
+            if (ansMatch) { answer = ansMatch[1].trim(); return; }
 
-            // Check Options (A), B), C), D) or A., B., C., D.)
             const optMatch = line.match(/^([A-D])[\.\)\:-]\s*(.+)/i);
             if (optMatch) {
                 isMcq = true;
-                const key = optMatch[1].toUpperCase();
-                options[key] = optMatch[2].trim();
+                options[optMatch[1].toUpperCase()] = optMatch[2].trim();
                 return;
             }
 
-            // Extract Question Statement
             if (!questionText) {
                 questionText = line.replace(/^(?:Q|Q\.|Question|\d+[\.\)\:-])\s*/i, '').trim();
             } else {
@@ -208,9 +190,7 @@ function parseBulkText(text) {
         if (questionText) {
             if (isMcq && options.A && options.B) {
                 let formattedAns = answer.toUpperCase();
-                if (!['A', 'B', 'C', 'D'].includes(formattedAns)) {
-                    formattedAns = 'A'; 
-                }
+                if (!['A', 'B', 'C', 'D'].includes(formattedAns)) formattedAns = 'A';
 
                 questions.push({
                     id: Date.now() + Math.random(),
@@ -236,29 +216,17 @@ function parseBulkText(text) {
 }
 
 function confirmAddBulkToExam() {
-    if (!parsedBulkBatch || parsedBulkBatch.length === 0) {
-        showToast("⚠️ No parsed questions to add!");
-        return;
-    }
-
+    if (parsedBulkBatch.length === 0) return;
     tempQuestionsBatch.push(...parsedBulkBatch);
-
     parsedBulkBatch = [];
-    const bulkInput = document.getElementById('bulkQuestionsInput');
-    if (bulkInput) bulkInput.value = '';
-
-    const previewContainer = document.getElementById('bulk-preview-container');
-    if (previewContainer) previewContainer.innerHTML = '';
-
-    const confirmBtn = document.getElementById('confirmBulkBtn');
-    if (confirmBtn) confirmBtn.classList.add('hidden');
-
-    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper.`;
-    showToast(`✅ ${tempQuestionsBatch.length} questions added to current exam batch!`);
+    document.getElementById('bulkQuestionsInput').value = '';
+    document.getElementById('bulk-preview-container').innerHTML = '';
+    document.getElementById('confirmBulkBtn').classList.add('hidden');
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper draft.`;
+    showToast(`✅ Added ${tempQuestionsBatch.length} questions to exam paper!`);
 }
 
-/* ==================================================================== */
-
+// CREATE TEST & ADMIN RENDER
 function handleCreateTest(event) {
     if (event) event.preventDefault();
     const title = document.getElementById('testTitle').value.trim();
@@ -269,8 +237,10 @@ function handleCreateTest(event) {
         return;
     }
 
+    const testId = 'test_' + Date.now();
     const newTest = {
-        id: 'test_' + Date.now(),
+        id: testId,
+        examKey: testId,
         title: title,
         duration: parseInt(duration),
         questions: [...tempQuestionsBatch]
@@ -300,169 +270,113 @@ function renderAdminData() {
     testContainer.innerHTML = '';
 
     if (testsData.length === 0) {
-        testContainer.innerHTML = '<p style="text-align:left; color:#94a3b8;">No exams set yet.</p>';
+        testContainer.innerHTML = '<p style="color:#94a3b8;">No exams created yet.</p>';
     } else {
         testsData.forEach((test) => {
-            const testRow = document.createElement('div');
-            testRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 10px; border-radius: 8px;";
-            
-            testRow.innerHTML = `
+            const row = document.createElement('div');
+            row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 10px; border-radius: 8px;";
+            row.innerHTML = `
                 <div>
-                    <strong style="font-size: 1.05rem;">${test.title}</strong>
-                    <div style="font-size: 0.85rem; color: #94a3b8;">Duration: ${test.duration} Mins | Questions: ${test.questions ? test.questions.length : 0}</div>
+                    <strong>${test.title}</strong>
+                    <div style="font-size: 0.85rem; color: #94a3b8;">Code: <b>${test.id}</b> | Duration: ${test.duration}m</div>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-primary" style="padding: 5px 10px !important; font-size: 0.8rem;" onclick="copyDirectExamLink('${test.id}')">📋 Copy Exam Link</button>
-                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; padding: 5px 10px !important; font-size: 0.8rem;" onclick="deleteTest('${test.id}')">Delete</button>
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem;" onclick="copyDirectExamLink('${test.id}')">📋 Copy Link</button>
+                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteTest('${test.id}')">Delete</button>
                 </div>
             `;
-            testContainer.appendChild(testRow);
+            testContainer.appendChild(row);
         });
     }
 
-    const subTableBody = document.getElementById('submissions-table-body');
-    subTableBody.innerHTML = '';
-    
+    const subBody = document.getElementById('submissions-table-body');
+    subBody.innerHTML = '';
     if (examSubmissions.length === 0) {
-        subTableBody.innerHTML = '<tr><td colspan="4" style="padding:10px; color:#94a3b8;">No candidate submissions recorded yet.</td></tr>';
+        subBody.innerHTML = '<tr><td colspan="4" style="color:#94a3b8;">No submissions recorded.</td></tr>';
     } else {
         examSubmissions.forEach(sub => {
-            const row = document.createElement('tr');
-            row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-            row.style.cursor = "pointer";
-            row.className = "clickable-history";
-            
-            row.onclick = () => viewSubmissionDetails(sub, true);
-
-            row.innerHTML = `
-                <td style="padding: 10px; color: #818cf8; text-decoration: underline;"><strong>${sub.candidateName}</strong></td>
-                <td style="padding: 10px;">${sub.examTitle}</td>
-                <td style="padding: 10px; color: #4ade80; font-weight: bold;">${sub.score} / ${sub.totalMarks}</td>
-                <td style="padding: 10px; color: #94a3b8;">${sub.timeTaken || 'N/A'}</td>
+            const tr = document.createElement('tr');
+            tr.style.cursor = "pointer";
+            tr.onclick = () => viewSubmissionDetails(sub, true);
+            tr.innerHTML = `
+                <td style="color: #818cf8; text-decoration: underline;"><strong>${sub.candidateName}</strong></td>
+                <td>${sub.examTitle}</td>
+                <td style="color: #4ade80; font-weight: bold;">${sub.score} / ${sub.totalMarks}</td>
+                <td style="color: #94a3b8;">${sub.timeTaken || 'N/A'}</td>
             `;
-            subTableBody.appendChild(row);
+            subBody.appendChild(tr);
         });
     }
 }
 
-function renderCandidateHistory() {
-    if (!currentLoggedInUser) return;
+// ANTI-CHEATING LOCKDOWN SYSTEM (EXAM.NET STYLE)
+function activateExamLockdown() {
+    tabSwitchCount = 0;
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+    }
+    window.addEventListener('blur', handleSecurityViolation);
+    document.addEventListener('visibilitychange', handleSecurityViolation);
+    document.addEventListener('contextmenu', preventDefaultAction);
+    document.addEventListener('copy', preventDefaultAction);
+    document.addEventListener('cut', preventDefaultAction);
+    document.addEventListener('paste', preventDefaultAction);
+    document.addEventListener('keydown', blockForbiddenKeys);
+    autoSaveInterval = setInterval(autoSaveExamDraft, 5000);
+}
 
-    document.getElementById('cand-profile-name').innerText = currentLoggedInUser.name;
-    document.getElementById('cand-profile-username').innerText = `Username ID: ${currentLoggedInUser.username}`;
+function deactivateExamLockdown() {
+    window.removeEventListener('blur', handleSecurityViolation);
+    document.removeEventListener('visibilitychange', handleSecurityViolation);
+    document.removeEventListener('contextmenu', preventDefaultAction);
+    document.removeEventListener('copy', preventDefaultAction);
+    document.removeEventListener('cut', preventDefaultAction);
+    document.removeEventListener('paste', preventDefaultAction);
+    document.removeEventListener('keydown', blockForbiddenKeys);
+    clearInterval(autoSaveInterval);
+}
 
-    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
-    const mySubmissions = examSubmissions.filter(s => s.candidateUsername.toLowerCase() === currentLoggedInUser.username.toLowerCase());
+function preventDefaultAction(e) { e.preventDefault(); showToast("⚠️ Security Action Blocked!"); }
 
-    const historyContainer = document.getElementById('candidate-history-container');
-    historyContainer.innerHTML = '';
-
-    if (mySubmissions.length === 0) {
-        historyContainer.innerHTML = '<p style="color: #94a3b8; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px;">You have not attempted any exams yet. Open a shared exam link to take a test.</p>';
-    } else {
-        mySubmissions.forEach((sub) => {
-            const historyCard = document.createElement('div');
-            historyCard.className = "clickable-history";
-            historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px; cursor: pointer;";
-            
-            historyCard.addEventListener('click', () => {
-                viewSubmissionDetails(sub, false);
-            });
-
-            historyCard.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <h4 style="color: #818cf8; margin: 0;">${sub.examTitle} ➔ (Tap to View Analysis)</h4>
-                    <span style="color: #4ade80; font-weight: bold; font-size: 1.1rem;">Score: ${sub.score} / ${sub.totalMarks}</span>
-                </div>
-                <div style="font-size: 0.85rem; color: #94a3b8; display: flex; justify-content: space-between;">
-                    <span>Attempted: ${sub.attemptedCount}/${sub.totalQuestions} Questions</span>
-                    <span>Time Taken: <b>${sub.timeTaken || 'N/A'}</b></span>
-                    <span>Submitted On: ${sub.timestamp}</span>
-                </div>
-            `;
-            historyContainer.appendChild(historyCard);
-        });
+function blockForbiddenKeys(e) {
+    if (e.ctrlKey && ['c', 'v', 'a', 'p', 'u'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        showToast("⚠️ Shortcut disabled during exam!");
     }
 }
 
-function viewSubmissionDetails(sub, isAdmin = false) {
-    if (!sub || !sub.detailedAnswers) {
-        showToast("⚠️ Detailed report not available for this record.");
-        return;
-    }
-
-    document.getElementById('result-cand-name').innerText = `Candidate: ${sub.candidateName} (${sub.candidateUsername})`;
-    document.getElementById('result-total-score').innerText = `${sub.score} / ${sub.totalMarks}`;
-    document.getElementById('result-summary-stats').innerText = `Exam: ${sub.examTitle} | Attempted: ${sub.attemptedCount} | Unattempted: ${sub.totalQuestions - sub.attemptedCount} | Time Taken: ${sub.timeTaken || 'N/A'}`;
-
-    let breakdownHtml = "";
-    sub.detailedAnswers.forEach((ansObj, idx) => {
-        let cardClass = "";
-        let statusBadge = "";
-
-        if (!ansObj.isAttempted) {
-            cardClass = "not-attempted-card";
-            statusBadge = `<span style="color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 4px;">⚠️ NOT ATTEMPTED</span>`;
-        } else if (ansObj.isCorrect) {
-            cardClass = "correct-card";
-            statusBadge = `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${ansObj.marks})</span>`;
+function handleSecurityViolation() {
+    if (document.hidden || !document.hasFocus()) {
+        tabSwitchCount++;
+        const remaining = MAX_ALLOWED_TAB_SWITCHES - tabSwitchCount;
+        if (remaining > 0) {
+            alert(`🚨 SECURITY WARNING! Navigated away from exam tab.\nWarnings Remaining: ${remaining}/${MAX_ALLOWED_TAB_SWITCHES}`);
         } else {
-            cardClass = "incorrect-card";
-            statusBadge = `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${ansObj.marks})</span>`;
+            alert("❌ MAXIMUM SECURITY VIOLATION! Auto-submitting exam now.");
+            submitCandidateExam(null, true);
         }
-
-        breakdownHtml += `
-            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <strong>Q${idx + 1}. ${ansObj.questionText}</strong>
-                    ${statusBadge}
-                </div>
-                <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;">
-                    <strong>Candidate's Answer:</strong> ${ansObj.isAttempted ? ansObj.candAnswer : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
-                </div>
-                <div style="font-size: 0.9rem; color: #4ade80; margin-top: 6px; background: rgba(74, 222, 128, 0.1); padding: 6px 10px; border-radius: 4px;">
-                    <strong>Correct Answer:</strong> ${ansObj.correctDisplay}
-                </div>
-            </div>
-        `;
-    });
-
-    breakdownHtml += `
-        <div style="margin-top: 20px; text-align: center;">
-            <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="${isAdmin ? "showPage('admin-dashboard-page'); renderAdminData();" : "openDashboard();"}">
-                ← Back to Dashboard
-            </button>
-        </div>
-    `;
-
-    document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
-    showPage('exam-result-page');
-}
-
-function copyDirectExamLink(testId) {
-    const liveUrl = window.location.href.split('#')[0];
-    const directExamLink = `${liveUrl}#take-test=${testId}`;
-    
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(directExamLink).then(() => {
-            showToast("✨ Direct Exam Link Copied for Candidates!");
-        });
-    } else {
-        fallbackCopyText(directExamLink);
     }
 }
 
+function autoSaveExamDraft() {
+    if (!activeExamTest) return;
+    const formData = new FormData(document.getElementById('candidateExamForm'));
+    const draftData = {};
+    for (let [key, val] of formData.entries()) draftData[key] = val;
+    localStorage.setItem(`draft_${activeExamTest.id}_${currentLoggedInUser.username}`, JSON.stringify(draftData));
+}
+
+// START & SUBMIT EXAM
 function startExamProcess(testId) {
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
     activeExamTest = testsData.find(t => t.id === testId);
 
     if (!activeExamTest) {
-        alert("Exam link is invalid or has been deleted by Admin.");
+        alert("Exam code is invalid or has been deleted.");
         return;
     }
 
     document.getElementById('main-navbar').style.display = 'none';
-
     document.getElementById('exam-paper-title').innerText = activeExamTest.title;
     document.getElementById('exam-paper-info').innerText = `Candidate: ${currentLoggedInUser.name} | Total Questions: ${activeExamTest.questions.length}`;
 
@@ -474,27 +388,22 @@ function startExamProcess(testId) {
         qCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 10px; margin-bottom: 20px;";
 
         let inputHtml = "";
-
         if (q.type === 'mcq') {
             inputHtml = `
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="A"> A) ${q.options.A}</label>
-                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="B"> B) ${q.options.B}</label>
-                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="C"> C) ${q.options.C}</label>
-                    <label style="font-weight: normal; cursor: pointer;"><input type="radio" name="q_${q.id}" value="D"> D) ${q.options.D}</label>
+                    <label style="cursor: pointer;"><input type="radio" name="q_${q.id}" value="A"> A) ${q.options.A}</label>
+                    <label style="cursor: pointer;"><input type="radio" name="q_${q.id}" value="B"> B) ${q.options.B}</label>
+                    <label style="cursor: pointer;"><input type="radio" name="q_${q.id}" value="C"> C) ${q.options.C}</label>
+                    <label style="cursor: pointer;"><input type="radio" name="q_${q.id}" value="D"> D) ${q.options.D}</label>
                 </div>
             `;
-        } else if (q.type === 'oneword') {
-            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type one-word answer" style="margin-top: 10px;">`;
-        } else if (q.type === 'short') {
-            inputHtml = `<input type="text" name="q_${q.id}" placeholder="Type short answer" style="margin-top: 10px;">`;
-        } else if (q.type === 'long') {
-            inputHtml = `<textarea name="q_${q.id}" rows="4" placeholder="Type detailed long answer..." style="width: 100%; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;"></textarea>`;
+        } else {
+            inputHtml = `<input type="text" name="q_${q.id}" class="form-control" style="margin-top: 10px;" placeholder="Type your answer...">`;
         }
 
         qCard.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="color: #cbd5e1;">Q${idx + 1}. ${q.question}</h4>
+                <h4>Q${idx + 1}. ${q.question}</h4>
                 <span style="font-size: 0.8rem; background: rgba(129, 140, 248, 0.2); color: #818cf8; padding: 2px 8px; border-radius: 12px;">${q.marks} Mark(s)</span>
             </div>
             ${inputHtml}
@@ -505,7 +414,7 @@ function startExamProcess(testId) {
     examTimeRemaining = activeExamTest.duration * 60;
     examStartTimeStamp = Date.now();
     runExamTimer();
-
+    activateExamLockdown();
     showPage('exam-attempt-page');
 }
 
@@ -516,22 +425,14 @@ function runExamTimer() {
 
     examTimerInterval = setInterval(() => {
         examTimeRemaining--;
+        let min = Math.floor(examTimeRemaining / 60);
+        let sec = examTimeRemaining % 60;
+        timerDisplay.innerText = `⏱️ ${min < 10 ? '0' + min : min}:${sec < 10 ? '0' + sec : sec}`;
 
-        let minutes = Math.floor(examTimeRemaining / 60);
-        let seconds = examTimeRemaining % 60;
-
-        let displayMin = minutes < 10 ? '0' + minutes : minutes;
-        let displaySec = seconds < 10 ? '0' + seconds : seconds;
-
-        timerDisplay.innerText = `⏱️ ${displayMin}:${displaySec}`;
-
-        if (examTimeRemaining <= 20) {
-            timerDisplay.classList.add('timer-warning');
-        }
-
+        if (examTimeRemaining <= 30) timerDisplay.classList.add('timer-warning');
         if (examTimeRemaining <= 0) {
             clearInterval(examTimerInterval);
-            showToast("⏰ Time is up! Submitting exam automatically...");
+            showToast("⏰ Time expired! Submitting exam...");
             submitCandidateExam(null, true);
         }
     }, 1000);
@@ -540,22 +441,16 @@ function runExamTimer() {
 function submitCandidateExam(event, isAutoSubmit = false) {
     if (event) event.preventDefault();
     clearInterval(examTimerInterval);
+    deactivateExamLockdown();
 
-    const timeSpentSeconds = Math.floor((Date.now() - examStartTimeStamp) / 1000);
-    const timeTakenMin = Math.floor(timeSpentSeconds / 60);
-    const timeTakenSec = timeSpentSeconds % 60;
-    const timeTakenStr = `${timeTakenMin}m ${timeTakenSec}s`;
-
+    const timeSpent = Math.floor((Date.now() - examStartTimeStamp) / 1000);
+    const timeTakenStr = `${Math.floor(timeSpent / 60)}m ${timeSpent % 60}s`;
     const formData = new FormData(document.getElementById('candidateExamForm'));
 
-    let totalMarks = 0;
-    let scoredMarks = 0;
-    let correctCount = 0;
-    let unattemptedCount = 0;
+    let totalMarks = 0, scoredMarks = 0, unattemptedCount = 0;
     let detailedAnswersList = [];
-    let breakdownHtml = "";
 
-    activeExamTest.questions.forEach((q, idx) => {
+    activeExamTest.questions.forEach((q) => {
         totalMarks += q.marks;
         const candAns = (formData.get(`q_${q.id}`) || "").trim();
         let isAttempted = candAns.length > 0;
@@ -564,22 +459,12 @@ function submitCandidateExam(event, isAutoSubmit = false) {
         if (!isAttempted) {
             unattemptedCount++;
         } else {
-            if (q.type === 'mcq') {
-                if (candAns.toUpperCase() === q.answer.toUpperCase()) {
-                    isCorrect = true;
-                    scoredMarks += q.marks;
-                    correctCount++;
-                }
-            } else if (q.type === 'oneword') {
-                if (q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
-                    isCorrect = true;
-                    scoredMarks += q.marks;
-                    correctCount++;
-                }
+            if (q.type === 'mcq' && candAns.toUpperCase() === q.answer.toUpperCase()) {
+                isCorrect = true; scoredMarks += q.marks;
+            } else if (q.type !== 'mcq' && q.answer && candAns.toLowerCase() === q.answer.toLowerCase()) {
+                isCorrect = true; scoredMarks += q.marks;
             }
         }
-
-        let correctDisplay = q.type === 'mcq' ? `Option ${q.answer} (${q.options[q.answer]})` : (q.answer || "Key answer specified by admin");
 
         detailedAnswersList.push({
             questionText: q.question,
@@ -587,40 +472,10 @@ function submitCandidateExam(event, isAutoSubmit = false) {
             candAnswer: candAns,
             isAttempted: isAttempted,
             isCorrect: isCorrect,
-            correctDisplay: correctDisplay
+            correctDisplay: q.type === 'mcq' ? `Option ${q.answer}` : (q.answer || "Answer key specified by teacher")
         });
-
-        let cardClass = "";
-        let statusBadge = "";
-
-        if (!isAttempted) {
-            cardClass = "not-attempted-card";
-            statusBadge = `<span style="color: #ef4444; font-weight: bold; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 4px;">⚠️ NOT ATTEMPTED</span>`;
-        } else if (isCorrect) {
-            cardClass = "correct-card";
-            statusBadge = `<span style="color: #4ade80; font-weight: bold;">✔ Correct (+${q.marks})</span>`;
-        } else {
-            cardClass = "incorrect-card";
-            statusBadge = `<span style="color: #ef4444; font-weight: bold;">✖ Incorrect (0/${q.marks})</span>`;
-        }
-
-        breakdownHtml += `
-            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <strong>Q${idx + 1}. ${q.question}</strong>
-                    ${statusBadge}
-                </div>
-                <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 5px;">
-                    <strong>Your Answer:</strong> ${isAttempted ? candAns : '<span style="color: #ef4444; font-weight: bold;">Not Attempted</span>'}
-                </div>
-                <div style="font-size: 0.9rem; color: #4ade80; margin-top: 6px; background: rgba(74, 222, 128, 0.1); padding: 6px 10px; border-radius: 4px;">
-                    <strong>Correct Answer:</strong> ${correctDisplay}
-                </div>
-            </div>
-        `;
     });
 
-    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
     examSubmissions.push({
         candidateName: currentLoggedInUser.name,
         candidateUsername: currentLoggedInUser.username,
@@ -635,43 +490,107 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     });
     localStorage.setItem('portal_submissions', JSON.stringify(examSubmissions));
 
-    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
-    document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
-    document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Time Taken: ${timeTakenStr}`;
-    
-    breakdownHtml += `
-        <div style="margin-top: 20px; text-align: center;">
-            <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="openDashboard()">
-                ← Back to Dashboard
-            </button>
-        </div>
-    `;
-
-    document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
-
+    renderSubmissionResultView(currentLoggedInUser.name, scoredMarks, totalMarks, activeExamTest.questions.length - unattemptedCount, unattemptedCount, timeTakenStr, detailedAnswersList, false);
     document.getElementById('main-navbar').style.display = 'flex';
     showPage('exam-result-page');
 }
 
+function renderSubmissionResultView(candName, score, total, attempted, unattempted, timeTaken, answers, isAdmin) {
+    document.getElementById('result-cand-name').innerText = candName;
+    document.getElementById('result-total-score').innerText = `${score} / ${total}`;
+    document.getElementById('result-summary-stats').innerText = `Attempted: ${attempted} | Unattempted: ${unattempted} | Time Taken: ${timeTaken}`;
+
+    let breakdownHtml = "";
+    answers.forEach((ans, idx) => {
+        let badge = !ans.isAttempted ? `<span style="color:#ef4444;">⚠️ NOT ATTEMPTED</span>` :
+                    (ans.isCorrect ? `<span style="color:#4ade80;">✔ Correct (+${ans.marks})</span>` : `<span style="color:#ef4444;">✖ Incorrect</span>`);
+
+        breakdownHtml += `
+            <div style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Q${idx + 1}. ${ans.questionText}</strong> ${badge}
+                </div>
+                <div style="font-size: 0.9rem; margin-top: 5px;">Your Answer: ${ans.isAttempted ? ans.candAnswer : 'N/A'}</div>
+                <div style="font-size: 0.9rem; color: #4ade80; margin-top: 4px;">Correct Answer: ${ans.correctDisplay}</div>
+            </div>
+        `;
+    });
+
+    breakdownHtml += `
+        <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" onclick="${isAdmin ? "showPage('admin-dashboard-page'); renderAdminData();" : "openDashboard();"}">
+            ← Back to Dashboard
+        </button>
+    `;
+
+    document.getElementById('result-questions-breakdown').innerHTML = breakdownHtml;
+}
+
+function viewSubmissionDetails(sub, isAdmin) {
+    renderSubmissionResultView(sub.candidateName, sub.score, sub.totalMarks, sub.attemptedCount, sub.totalQuestions - sub.attemptedCount, sub.timeTaken, sub.detailedAnswers, isAdmin);
+    showPage('exam-result-page');
+}
+
+// ACCESS KEY & EXPORT TOOLS
+function joinExamViaKey() {
+    const key = document.getElementById('examKeyInput').value.trim();
+    testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
+    const target = testsData.find(t => t.id === key || t.examKey === key);
+    if (target) startExamProcess(target.id);
+    else showToast("❌ Invalid Exam Code!");
+}
+
+function exportSubmissionsToCSV() {
+    examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
+    if (examSubmissions.length === 0) { showToast("⚠️ No data to export!"); return; }
+
+    let csv = "data:text/csv;charset=utf-8,Candidate Name,Username,Exam Title,Score,Total Marks,Time Taken,Date\n";
+    examSubmissions.forEach(s => {
+        csv += `"${s.candidateName}","${s.candidateUsername}","${s.examTitle}",${s.score},${s.totalMarks},"${s.timeTaken}","${s.timestamp}"\n`;
+    });
+
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `Exam_Results_${Date.now()}.csv`;
+    link.click();
+}
+
+// CALCULATOR & CANVAS SCRATCHPAD
+function toggleCalculator() { document.getElementById('exam-calculator-modal').classList.toggle('hidden'); }
+function calcInput(v) {
+    const d = document.getElementById('calcDisplay');
+    if (v === 'C') d.value = '';
+    else if (v === '=') { try { d.value = eval(d.value); } catch { d.value = 'Error'; } }
+    else d.value += v;
+}
+
+function openCanvasModal() {
+    const modal = document.getElementById('exam-canvas-modal');
+    modal.classList.remove('hidden');
+    const canvas = document.getElementById('drawingBoard');
+    canvasContext = canvas.getContext('2d');
+    canvas.onmousedown = (e) => { isDrawing = true; canvasContext.beginPath(); canvasContext.moveTo(e.offsetX, e.offsetY); };
+    canvas.onmousemove = (e) => { if (isDrawing) { canvasContext.lineTo(e.offsetX, e.offsetY); canvasContext.stroke(); } };
+    canvas.onmouseup = () => isDrawing = false;
+}
+function clearCanvas() { canvasContext.clearRect(0, 0, 500, 350); }
+function closeCanvasModal() { document.getElementById('exam-canvas-modal').classList.add('hidden'); }
+
+// AUTH & UTILS
 function handleLogin(event) {
     if (event) event.preventDefault();
     const role = document.getElementById('userRole').value;
-    const usernameInput = document.getElementById('username').value.trim();
-    const passwordInput = document.getElementById('password').value.trim();
+    const uInput = document.getElementById('username').value.trim();
+    const pInput = document.getElementById('password').value.trim();
 
     if (role === 'admin') {
-        if (usernameInput !== ADMIN_CREDENTIALS.username || passwordInput !== ADMIN_CREDENTIALS.password) {
-            showToast("❌ Invalid Admin Credentials!");
-            return;
+        if (uInput !== ADMIN_CREDENTIALS.username || pInput !== ADMIN_CREDENTIALS.password) {
+            showToast("❌ Invalid Admin Credentials!"); return;
         }
-        currentLoggedInUser = { name: "Admin", username: usernameInput };
+        currentLoggedInUser = { name: "Admin", username: uInput };
     } else {
         registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
-        const found = registeredCandidates.find(c => c.username.toLowerCase() === usernameInput.toLowerCase() && c.password === passwordInput);
-        if (!found) { 
-            showToast("❌ Invalid Candidate Credentials!"); 
-            return; 
-        }
+        const found = registeredCandidates.find(c => c.username.toLowerCase() === uInput.toLowerCase() && c.password === pInput);
+        if (!found) { showToast("❌ Invalid Credentials!"); return; }
         currentLoggedInUser = found;
     }
 
@@ -681,31 +600,24 @@ function handleLogin(event) {
     if (role === 'candidate' && pendingExamTestId) {
         startExamProcess(pendingExamTestId);
         pendingExamTestId = null;
-        return;
-    }
-
-    if (role === 'admin') {
-        showPage('admin-dashboard-page');
-        renderAdminData();
     } else {
-        showPage('candidate-dashboard-page');
-        renderCandidateHistory();
+        openDashboard();
     }
 }
 
 function handleCandidateRegister(event) {
     if (event) event.preventDefault();
-    const fullname = document.getElementById('regFullname').value.trim();
-    const usernameInput = document.getElementById('regUsername').value.trim();
-    const passwordInput = document.getElementById('regPassword').value.trim();
+    const name = document.getElementById('regFullname').value.trim();
+    const username = document.getElementById('regUsername').value.trim();
+    const password = document.getElementById('regPassword').value.trim();
 
     registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
-    registeredCandidates.push({ name: fullname, username: usernameInput, password: passwordInput });
+    registeredCandidates.push({ name, username, password });
     localStorage.setItem('portal_candidates', JSON.stringify(registeredCandidates));
 
-    showToast("✅ Registered successfully! Redirecting...");
+    showToast("✅ Registration successful!");
     document.getElementById('userRole').value = 'candidate';
-    document.getElementById('username').value = usernameInput;
+    document.getElementById('username').value = username;
     showPage('login-page');
 }
 
@@ -723,41 +635,31 @@ function deleteTest(testId) {
     showToast("🗑️ Test deleted!");
 }
 
+function copyDirectExamLink(testId) {
+    const link = `${window.location.href.split('#')[0]}#take-test=${testId}`;
+    navigator.clipboard.writeText(link).then(() => showToast("✨ Link copied to clipboard!"));
+}
+
 function showToast(msg) {
     const toast = document.getElementById("copyToast");
     if (!toast) return;
     toast.innerText = msg;
     toast.classList.remove("hidden");
-    toast.classList.add("show");
-    setTimeout(() => { toast.classList.remove("show"); toast.classList.add("hidden"); }, 3000);
+    setTimeout(() => toast.classList.add("hidden"), 3000);
 }
 
 function togglePasswordVisibility(inputId, emojiId) {
-    const inputField = document.getElementById(inputId);
-    const emojiSpan = document.getElementById(emojiId);
-    if (!inputField || !emojiSpan) return;
-    inputField.type = inputField.type === "password" ? "text" : "password";
-    emojiSpan.innerText = inputField.type === "password" ? "🙈" : "🐵";
-}
-
-function fallbackCopyText(text) {
-    const tempInput = document.createElement("input");
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand("copy");
-    document.body.removeChild(tempInput);
-    showToast("✨ Link copied!");
+    const input = document.getElementById(inputId);
+    const emoji = document.getElementById(emojiId);
+    input.type = input.type === "password" ? "text" : "password";
+    emoji.innerText = input.type === "password" ? "🙈" : "🐵";
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     const hash = window.location.hash;
     if (hash.startsWith('#take-test=')) {
         pendingExamTestId = hash.split('=')[1];
-        document.getElementById('userRole').value = 'candidate';
-        showToast("🔒 Please login as candidate to begin test.");
+        showToast("🔒 Please login as student to start exam.");
         showPage('login-page');
-    } else if (hash === '#register') {
-        showPage('register-page');
     }
 });

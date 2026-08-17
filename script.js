@@ -210,8 +210,12 @@ function renderCandidateHistory() {
         mySubmissions.forEach((sub, idx) => {
             const historyCard = document.createElement('div');
             historyCard.className = "clickable-history";
-            historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px;";
-            historyCard.onclick = () => viewSubmissionDetails(sub);
+            historyCard.style.cssText = "background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px; cursor: pointer;";
+            
+            // Explicit click listener binding
+            historyCard.addEventListener('click', () => {
+                viewSubmissionDetails(sub);
+            });
 
             historyCard.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -230,7 +234,12 @@ function renderCandidateHistory() {
 }
 
 function viewSubmissionDetails(sub) {
-    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username}) - ${sub.examTitle}`;
+    if (!sub || !sub.detailedAnswers) {
+        showToast("⚠️ Detailed report not available for this record.");
+        return;
+    }
+
+    document.getElementById('result-cand-name').innerText = `${currentLoggedInUser.name} (${currentLoggedInUser.username})`;
     document.getElementById('result-total-score').innerText = `${sub.score} / ${sub.totalMarks}`;
     document.getElementById('result-summary-stats').innerText = `Attempted: ${sub.attemptedCount} | Unattempted: ${sub.totalQuestions - sub.attemptedCount} | Time Taken: ${sub.timeTaken || 'N/A'}`;
 
@@ -251,7 +260,7 @@ function viewSubmissionDetails(sub) {
         }
 
         breakdownHtml += `
-            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03);">
+            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <strong>Q${idx + 1}. ${ansObj.questionText}</strong>
                     ${statusBadge}
@@ -372,7 +381,6 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     if (event) event.preventDefault();
     clearInterval(examTimerInterval);
 
-    // Calculate time taken
     const timeSpentSeconds = Math.floor((Date.now() - examStartTimeStamp) / 1000);
     const timeTakenMin = Math.floor(timeSpentSeconds / 60);
     const timeTakenSec = timeSpentSeconds % 60;
@@ -437,7 +445,7 @@ function submitCandidateExam(event, isAutoSubmit = false) {
         }
 
         breakdownHtml += `
-            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03);">
+            <div class="${cardClass}" style="padding: 15px; border-radius: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                     <strong>Q${idx + 1}. ${q.question}</strong>
                     ${statusBadge}

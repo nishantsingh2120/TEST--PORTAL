@@ -6,7 +6,6 @@
     <title>Exam Portal App</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Custom Timer Animations & Highlights */
         .timer-box {
             position: sticky;
             top: 10px;
@@ -35,12 +34,8 @@
             border: 2px solid #ef4444 !important;
             background: rgba(239, 68, 68, 0.08) !important;
         }
-        .correct-card {
-            border-left: 5px solid #4ade80 !important;
-        }
-        .incorrect-card {
-            border-left: 5px solid #f87171 !important;
-        }
+        .correct-card { border-left: 5px solid #4ade80 !important; }
+        .incorrect-card { border-left: 5px solid #f87171 !important; }
     </style>
 </head>
 <body>
@@ -77,7 +72,6 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-wrapper">
-                            <span id="login-tracker-emoji" class="tracker-emoji hidden">🐵</span>
                             <input type="password" id="password" placeholder="Enter password" required>
                             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji')">
                                 <span id="login-pwd-emoji" class="emoji-icon">🙈</span>
@@ -120,11 +114,11 @@
             </div>
         </section>
 
-        <!-- DASHBOARD PAGE VIEW -->
-        <section id="dashboard-page" class="hidden" style="width: 100%;">
+        <!-- ADMIN EXCLUSIVE DASHBOARD -->
+        <section id="admin-dashboard-page" class="hidden" style="width: 100%;">
             <div class="card">
-                <h2>Dashboard Overview</h2>
-                <p id="welcome-text">Welcome back!</p>
+                <h2>Admin Dashboard Overview</h2>
+                <p id="admin-welcome-text">Welcome back, Admin!</p>
                 <br>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -144,8 +138,8 @@
                 <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
             </div>
 
-            <!-- ADMIN ONLY: CREATE MULTI-PATTERN TEST & CANDIDATE RESULTS TRACKER -->
-            <div id="admin-test-section" class="card hidden">
+            <!-- CREATE MULTI-PATTERN TEST -->
+            <div class="card">
                 <h2>Set Exam Paper</h2>
                 <form id="createTestForm" onsubmit="handleCreateTest(event); return false;">
                     <div class="form-group">
@@ -158,7 +152,6 @@
                         <input type="number" id="testDuration" placeholder="e.g. 1" required>
                     </div>
 
-                    <!-- ADVANCED QUESTION ADDER -->
                     <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; padding-top: 15px;">
                         <h3 style="text-align: left; margin-bottom: 12px; color: #818cf8;">Add Question to Exam</h3>
                         
@@ -182,7 +175,6 @@
                             <input type="number" id="qMarks" value="1" min="1">
                         </div>
 
-                        <!-- MCQ OPTIONS BLOCK -->
                         <div id="mcq-options-wrapper">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                 <div class="form-group"><label>Option A</label><input type="text" id="optA" placeholder="Option A"></div>
@@ -201,7 +193,6 @@
                             </div>
                         </div>
 
-                        <!-- NON-MCQ CORRECT ANSWER BLOCK -->
                         <div id="non-mcq-answer-wrapper" class="hidden">
                             <div class="form-group">
                                 <label for="textCorrectAns">Expected Answer / Key</label>
@@ -221,8 +212,8 @@
                 <div id="test-list-container"></div>
             </div>
 
-            <!-- ADMIN ONLY: CANDIDATES SUBMISSION AUDIT TABLE -->
-            <div id="admin-submissions-section" class="card hidden">
+            <!-- CANDIDATES SUBMISSIONS AUDIT -->
+            <div class="card">
                 <h2 style="text-align: left;">Candidate Exam Submissions Report</h2>
                 <div style="overflow-x: auto; width: 100%; margin-top: 15px;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -239,10 +230,27 @@
                     </table>
                 </div>
             </div>
-
         </section>
 
-        <!-- CANDIDATE DIRECT EXAM PORTAL VIEW WITH TIMER -->
+        <!-- CANDIDATE EXCLUSIVE PROFILE / HISTORY DASHBOARD -->
+        <section id="candidate-dashboard-page" class="hidden" style="width: 100%; max-width: 800px; margin: 0 auto;">
+            <div class="card" style="text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 id="cand-profile-name" style="color: #818cf8; margin-bottom: 2px;">Candidate Name</h2>
+                        <p id="cand-profile-username" style="color: #94a3b8; font-size: 0.9rem;">Username: -</p>
+                    </div>
+                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+                <h3 style="margin-bottom: 15px; color: #cbd5e1;">Your Exam History & Performance Reports</h3>
+                <div id="candidate-history-container"></div>
+            </div>
+        </section>
+
+        <!-- EXAM ATTEMPT PAGE -->
         <section id="exam-attempt-page" class="hidden" style="width: 100%; max-width: 750px; margin: 0 auto;">
             <div style="text-align: center; margin-bottom: 15px;">
                 <div id="exam-timer-display" class="timer-box">⏱️ 00:00</div>
@@ -260,9 +268,12 @@
             </div>
         </section>
 
-        <!-- CANDIDATE RESULT SCORECARD VIEW -->
+        <!-- EXAM RESULT SCORECARD VIEW -->
         <section id="exam-result-page" class="hidden" style="width: 100%; max-width: 750px; margin: 0 auto;">
             <div class="card" style="text-align: left;">
+                <div style="text-align: right; margin-bottom: 10px;">
+                    <button class="btn btn-primary" onclick="openDashboard()">Back to My History 📋</button>
+                </div>
                 <h2 style="color: #4ade80; text-align: center; margin-bottom: 5px;">🎉 Exam Completed!</h2>
                 <p style="text-align: center; color: #94a3b8; margin-bottom: 20px;">Here is your performance report:</p>
 

@@ -78,7 +78,7 @@ async function handleAdminLogin(e) {
             if (navBtn) navBtn.classList.add('hidden');
             if (logoutBtn) logoutBtn.classList.remove('hidden');
             
-            // 2. Hide Login Section Explicitly
+            // 2. Hide Login Window
             const loginView = document.getElementById('view-admin-login');
             if (loginView) {
                 loginView.classList.add('hidden');
@@ -139,6 +139,7 @@ function renderTestsTable(tests) {
 
     tests.forEach(test => {
         const tr = document.createElement('tr');
+        // Direct test URL for candidates
         const shareUrl = `${window.location.origin}${window.location.pathname}?test_id=${test.id}`;
 
         tr.innerHTML = `
@@ -146,8 +147,19 @@ function renderTestsTable(tests) {
             <td>${test.duration_minutes} Mins</td>
             <td>${test.total_questions || 0}</td>
             <td>${test.total_marks || 0}</td>
-            <td><span class="badge ${test.is_published ? 'badge-success' : 'badge-warning'}">${test.is_published ? 'Published' : 'Draft'}</span></td>
-            <td><button class="btn btn-sm btn-outline" onclick="copyShareLink('${shareUrl}')">📋 Copy Link</button></td>
+            <td>
+                <span class="badge ${test.is_published ? 'badge-success' : 'badge-warning'}" 
+                      style="cursor:pointer;" 
+                      onclick="togglePublishStatus('${test.id}', ${test.is_published})" 
+                      title="Click to toggle publish status">
+                    ${test.is_published ? 'Published' : 'Draft (Click to Publish)'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="copyShareLink('${shareUrl}')">
+                    📋 Copy Candidate Link
+                </button>
+            </td>
             <td>
                 <button class="btn btn-sm btn-primary" onclick="editTest('${test.id}')">Edit / Add Questions</button>
             </td>
@@ -156,9 +168,25 @@ function renderTestsTable(tests) {
     });
 }
 
+// Quick Toggle Publish Function
+async function togglePublishStatus(testId, currentStatus) {
+    const newStatus = !currentStatus;
+    const { error } = await supabaseClient
+        .from('tests')
+        .update({ is_published: newStatus })
+        .eq('id', testId);
+
+    if (error) {
+        if (typeof showToast === "function") showToast("Failed to update publish status", "danger");
+    } else {
+        if (typeof showToast === "function") showToast(`Test ${newStatus ? 'Published' : 'Unpublished'}!`, "success");
+        loadAdminDashboardData();
+    }
+}
+
 function copyShareLink(url) {
     navigator.clipboard.writeText(url);
-    if (typeof showToast === "function") showToast("Exam Direct Link Copied to Clipboard!", "info");
+    if (typeof showToast === "function") showToast("Candidate Link Copied to Clipboard!", "info");
     else alert("Link Copied!");
 }
 

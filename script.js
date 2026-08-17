@@ -2,17 +2,9 @@
 let isLoggedIn = false;
 let currentUserRole = "";
 
-// Dynamic Data Arrays
-let testsData = [
-    { id: 1, title: "Full Mock Test - 01", duration: 90 },
-    { id: 2, title: "Aptitude & Logical Reasoning", duration: 45 }
-];
-
-let candidatesData = [
-    { id: "CAND-101", name: "Rahul Sharma", status: "Active" },
-    { id: "CAND-102", name: "Priya Patel", status: "Active" },
-    { id: "CAND-103", name: "Amit Kumar", status: "Active" }
-];
+// Dynamic Data Arrays (Initially EMPTY - No Dummy Users)
+let testsData = [];
+let candidatesData = [];
 
 // Page Navigation
 function showPage(pageId) {
@@ -44,6 +36,18 @@ function handleLogin(event) {
     isLoggedIn = true;
     currentUserRole = role;
 
+    // Register active candidate automatically on login if candidate
+    if (role === 'candidate') {
+        const existingCand = candidatesData.find(c => c.name.toLowerCase() === username.toLowerCase());
+        if (!existingCand) {
+            candidatesData.push({
+                id: `CAND-${100 + candidatesData.length + 1}`,
+                name: username,
+                status: "Active"
+            });
+        }
+    }
+
     document.getElementById('welcome-text').innerText = `Welcome back, ${username} (${role.toUpperCase()})`;
 
     // Show/Hide Role Specific Modules
@@ -65,7 +69,7 @@ function handleLogin(event) {
 
 // Render Dynamic Stats & Modules
 function renderPortalData() {
-    // 1. Render Stats
+    // 1. Render Stats dynamically
     document.getElementById('stat-candidates').innerText = candidatesData.length;
     document.getElementById('stat-tests').innerText = testsData.length;
 
@@ -74,9 +78,9 @@ function renderPortalData() {
     testContainer.innerHTML = '';
 
     if (testsData.length === 0) {
-        testContainer.innerHTML = '<p style="text-align:left;">No tests published yet.</p>';
+        testContainer.innerHTML = '<p style="text-align:left; color:#94a3b8;">No tests set yet. Create a test above.</p>';
     } else {
-        testsData.forEach((test, index) => {
+        testsData.forEach((test) => {
             const testRow = document.createElement('div');
             testRow.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); margin-bottom: 8px; border-radius: 8px;";
             
@@ -97,18 +101,24 @@ function renderPortalData() {
 
     // 3. Render Candidate Directory Table
     const tableBody = document.getElementById('candidate-table-body');
+    const emptyMsg = document.getElementById('no-candidate-msg');
     tableBody.innerHTML = '';
 
-    candidatesData.forEach(cand => {
-        const row = document.createElement('tr');
-        row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-        row.innerHTML = `
-            <td style="padding: 10px;">${cand.id}</td>
-            <td style="padding: 10px;">${cand.name}</td>
-            <td style="padding: 10px;"><span style="color: #4ade80;">● ${cand.status}</span></td>
-        `;
-        tableBody.appendChild(row);
-    });
+    if (candidatesData.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        candidatesData.forEach(cand => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            row.innerHTML = `
+                <td style="padding: 10px;">${cand.id}</td>
+                <td style="padding: 10px;">${cand.name}</td>
+                <td style="padding: 10px;"><span style="color: #4ade80;">● ${cand.status}</span></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
 }
 
 // Admin: Create New Test
@@ -141,8 +151,6 @@ function handleLogout() {
     isLoggedIn = false;
     currentUserRole = "";
     document.getElementById('loginForm').reset();
-    document.getElementById('stat-candidates').innerText = '0';
-    document.getElementById('stat-tests').innerText = '0';
     showToast("Logged out successfully");
     showPage('login-page');
 }

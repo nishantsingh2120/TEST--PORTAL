@@ -54,6 +54,7 @@
         <nav class="nav-links">
             <button class="btn btn-outline nav-btn" id="nav-login" onclick="showPage('login-page')">Login</button>
             <button class="btn btn-outline nav-btn" id="nav-dash" onclick="openDashboard()">Dashboard</button>
+            <button class="btn btn-outline nav-btn hidden" id="nav-bulk" onclick="showPage('bulk-import-page')">Bulk Entries</button>
         </nav>
     </header>
 
@@ -237,6 +238,25 @@
                         <tbody id="submissions-table-body"></tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <!-- BULK ENTRIES SMART PARSER PAGE -->
+        <section id="bulk-import-page" class="hidden" style="width: 100%; max-width: 800px; margin: 0 auto;">
+            <div class="card" style="text-align: left;">
+                <h2>📥 Smart Bulk Question Entries</h2>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 15px;">Paste your mixed exam text below (MCQs with options/answers, One-word, Short & Long questions all together). Our AI parser will automatically categorize them!</p>
+                
+                <div class="form-group">
+                    <textarea id="bulkRawInput" rows="7" placeholder="Example:&#10;1. What is the capital of France?&#10;a) London&#10;b) Paris&#10;Answer: b&#10;&#10;2. Define Photosynthesis."></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="previewBulkEntries()">Auto-Parse & Preview 🚀</button>
+            </div>
+
+            <div id="bulk-preview-container" class="card hidden" style="text-align: left; margin-top: 20px;">
+                <h3>🔍 Parsed Questions Preview</h3>
+                <div id="bulk-preview-list" style="margin: 15px 0;"></div>
+                <button type="button" class="btn btn-primary" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="confirmAddBulkToExam()">Do you want to add these questions to your question paper? ✅</button>
             </div>
         </section>
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   ULTRA-LUXURY DARK & HONEYCOMB HIGH-TECH SYSTEM
+   ULTRA-LUXURY DARK & HONEYCOMB HIGH-TECH SYSTEM (FIXED VIEWS)
    ============================================================ */
 
 /* 1. Global Reset & Pure Dark Theme */
@@ -16,7 +16,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center aligns main content */
+    align-items: center;
     overflow-x: hidden;
     position: relative;
 }
@@ -44,8 +44,41 @@ body::before {
     100% { background-position: 0 0, 350px 600px, -350px 600px, 0 600px; }
 }
 
-/* 3. Main Container Layout (Centered & Max-Width Balanced) */
-.container, main, #app, .view-section {
+/* 3. Section Visibility Control (PAGE SEPARATION FIX) */
+/* Hidden sections by default */
+section, .view-section, .page, .tab-content {
+    display: none !important;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Only Active Section will be Visible */
+section.active, 
+.view-section.active, 
+.page.active, 
+.tab-content.active,
+[style*="display: block"],
+[style*="display: flex"],
+[style*="display: grid"] {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.4s ease-in-out forwards;
+}
+
+/* Standalone sections that should stay visible */
+header, nav, footer, .navbar {
+    display: flex !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 4. Main Container Layout (Centered & Max-Width Balanced) */
+.container, main, #app {
     width: 100%;
     max-width: 1100px !important;
     margin: 0 auto !important;
@@ -55,7 +88,7 @@ body::before {
     align-items: center;
 }
 
-/* 4. Glassmorphism Top Navigation Bar */
+/* 5. Glassmorphism Top Navigation Bar */
 header, nav, .navbar {
     width: 100%;
     max-width: 1100px;
@@ -66,13 +99,20 @@ header, nav, .navbar {
     -webkit-backdrop-filter: blur(20px) saturate(190%);
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 20px !important;
-    display: flex;
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.15);
 }
 
-/* 5. Center-Aligned Section Cards with Cyber Laser Edges */
+/* Active Nav Links */
+nav a.active, .nav-link.active {
+    color: #818cf8 !important;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 8px;
+    padding: 6px 12px;
+}
+
+/* 6. Center-Aligned Section Cards with Cyber Laser Edges */
 .card, .dashboard-card, .stat-card {
     width: 100%;
     background: rgba(15, 23, 42, 0.6) !important;
@@ -109,10 +149,10 @@ header, nav, .navbar {
     left: 100%;
 }
 
-/* 6. Centered Dashboard Stats Grid */
+/* 7. Centered Dashboard Stats Grid */
 .stats-grid, .grid-3, .grid-2 {
     width: 100%;
-    display: grid;
+    display: grid !important;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
     gap: 20px !important;
     margin-bottom: 30px !important;
@@ -126,7 +166,7 @@ header, nav, .navbar {
     justify-content: center;
 }
 
-/* 7. Neon Gradient Text & Titles */
+/* 8. Neon Gradient Text & Titles */
 h1, h2, h3, .brand-logo {
     text-align: center;
     background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 40%, #818cf8 100%);
@@ -137,7 +177,7 @@ h1, h2, h3, .brand-logo {
     margin-bottom: 15px;
 }
 
-/* 8. Modern Futuristic Forms (Centered Controls) */
+/* 9. Modern Futuristic Forms (Centered Controls) */
 form {
     width: 100%;
     max-width: 600px;
@@ -180,7 +220,7 @@ input:focus, select:focus, textarea:focus {
     transform: translateY(-2px);
 }
 
-/* 9. Glowing Action Buttons */
+/* 10. Glowing Action Buttons */
 .btn {
     border-radius: 12px !important;
     padding: 12px 24px !important;
@@ -217,7 +257,7 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important;
 }
 
-/* 10. High-Tech Table & Alignment Fix */
+/* 11. High-Tech Table & Alignment Fix */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
@@ -251,7 +291,7 @@ tbody tr:hover {
     background-color: rgba(99, 102, 241, 0.08) !important;
 }
 
-/* 11. Live Pulse Badges */
+/* 12. Live Pulse Badges */
 .badge {
     border-radius: 20px !important;
     padding: 6px 14px !important;
@@ -283,13 +323,7 @@ tbody tr:hover {
     100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
 }
 
-.badge-warning {
-    background: rgba(245, 158, 11, 0.15) !important;
-    color: #fbbf24 !important;
-    border: 1px solid rgba(245, 158, 11, 0.3) !important;
-}
-
-/* 12. Smooth Scrollbar */
+/* 13. Smooth Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #030712; }
 ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }

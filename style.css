@@ -46,12 +46,12 @@ body::before {
     100% { background-position: 0 0, 350px 600px, -350px 600px, 0 600px; }
 }
 
-/* 3. Core Page Layout & Center Alignment Fix */
+/* 3. Core Page Layout & Visibility Control */
 .hidden, [hidden] {
     display: none !important;
 }
 
-.container, main, #app, .main-content, .wrapper {
+.container, main {
     width: 100%;
     max-width: 1100px !important;
     margin: 0 auto !important;
@@ -62,18 +62,18 @@ body::before {
     justify-content: center;
 }
 
-.login-container, .auth-container, .login-box, #login-page {
+.login-container {
     width: 100%;
     max-width: 440px !important;
     margin: 40px auto !important;
 }
 
-/* 4. Glassmorphic Navigation Bar */
-header, nav, .navbar {
+/* 4. Navbar Alignment Fix */
+header.navbar {
     width: 100%;
     max-width: 1100px;
     margin: 16px auto 32px auto;
-    padding: 14px 24px;
+    padding: 14px 28px;
     background: rgba(15, 23, 42, 0.75) !important;
     backdrop-filter: blur(20px) saturate(190%);
     -webkit-backdrop-filter: blur(20px) saturate(190%);
@@ -85,8 +85,19 @@ header, nav, .navbar {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.15);
 }
 
-/* 5. Modern Glass Cards with Laser Glare */
-.card, .dashboard-card, .stat-card, .box, .auth-box {
+.nav-links {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.nav-btn {
+    padding: 8px 16px !important;
+    font-size: 0.875rem !important;
+}
+
+/* 5. Modern Glass Cards */
+.card, .stat-card {
     width: 100%;
     background: rgba(15, 23, 42, 0.65) !important;
     backdrop-filter: blur(16px) saturate(180%) !important;
@@ -99,7 +110,7 @@ header, nav, .navbar {
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.card:hover, .dashboard-card:hover, .stat-card:hover {
+.card:hover, .stat-card:hover {
     transform: translateY(-4px);
     border-color: rgba(99, 102, 241, 0.5) !important;
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7),
@@ -121,8 +132,8 @@ header, nav, .navbar {
     left: 100%;
 }
 
-/* 6. Typography & Gradient Headings */
-h1, h2, h3, .title, .brand-logo {
+/* 6. Typography & Headings */
+h1, h2, h3, .brand-logo {
     text-align: center;
     background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 40%, #818cf8 100%);
     -webkit-background-clip: text;
@@ -132,9 +143,15 @@ h1, h2, h3, .title, .brand-logo {
     margin-bottom: 16px;
 }
 
+.brand-logo {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+}
+
 p {
     color: #94a3b8;
     font-size: 0.95rem;
+    text-align: center;
 }
 
 /* 7. Input Forms & Controls */
@@ -159,7 +176,7 @@ label {
     font-weight: 500;
 }
 
-input, select, textarea {
+input, select {
     width: 100%;
     background: rgba(30, 41, 59, 0.7) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -170,7 +187,7 @@ input, select, textarea {
     transition: all 0.25s ease !important;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus, select:focus {
     outline: none !important;
     border-color: #6366f1 !important;
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25), 
@@ -215,8 +232,8 @@ button, .btn {
     box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important;
 }
 
-/* 9. Data Grid & Table Alignment Fix */
-.stats-grid, .grid-3, .grid-2 {
+/* 9. Data Grid */
+.stats-grid {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -224,45 +241,7 @@ button, .btn {
     margin-bottom: 24px;
 }
 
-.table-responsive {
-    width: 100%;
-    overflow-x: auto;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-}
-
-th {
-    background: rgba(30, 41, 59, 0.8) !important;
-    color: #818cf8 !important;
-    padding: 14px 16px !important;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-}
-
-td {
-    padding: 14px 16px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-tbody tr:hover {
-    background-color: rgba(99, 102, 241, 0.08) !important;
-}
-
-/* 10. Glowing Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #030712; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-
-/* 11. Copy Link Toast Notification */
+/* 10. Glowing Toast Popup Notification */
 .toast-notification {
     position: fixed;
     bottom: 30px;

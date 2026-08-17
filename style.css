@@ -103,7 +103,8 @@ label {
     color: #94a3b8;
 }
 
-input, select {
+/* Added textarea to input and select styling */
+input, select, textarea {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     border: 1px solid #334155;
@@ -114,7 +115,12 @@ input, select {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-input:focus, select:focus {
+textarea {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+input:focus, select:focus, textarea:focus {
     border-color: #818cf8;
     box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
 }
@@ -260,4 +266,30 @@ input:focus, select:focus {
     opacity: 0;
     transform: translateY(20px);
     pointer-events: none;
+}
+
+/* Parsed Question Cards for Bulk Import */
+.parsed-q-card {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.parsed-q-card:hover {
+    border-color: #818cf8;
+    background: rgba(30, 41, 59, 0.7);
+}
+
+.parsed-q-type-badge {
+    display: inline-block;
+    background: #312e81;
+    color: #a5b4fc;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 10px;
 }

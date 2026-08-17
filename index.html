@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Portal</title>
+    <title>Portal App</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Header / Navbar -->
-    <header>
+    <!-- Header / Navbar Fix -->
+    <header class="navbar">
         <div class="brand-logo">Portal App</div>
-        <nav>
-            <button class="btn btn-outline" onclick="showPage('login-page')">Login</button>
-            <button class="btn btn-outline" onclick="showPage('dashboard-page')">Dashboard</button>
+        <nav class="nav-links">
+            <button class="btn btn-outline nav-btn" id="nav-login" onclick="showPage('login-page')">Login</button>
+            <button class="btn btn-outline nav-btn" id="nav-dash" onclick="openDashboard()">Dashboard</button>
         </nav>
     </header>
 
@@ -52,17 +52,17 @@
         <section id="dashboard-page" class="hidden">
             <div class="card">
                 <h2>Dashboard Overview</h2>
-                <p>Welcome to the Portal! Share your link with candidates below.</p>
+                <p id="welcome-text">Welcome back!</p>
                 <br>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>Total Candidates</h3>
-                        <p>128</p>
+                        <h3>Active Candidates</h3>
+                        <p id="stat-candidates">0</p>
                     </div>
                     <div class="stat-card">
                         <h3>Active Tests</h3>
-                        <p>14</p>
+                        <p id="stat-tests">0</p>
                     </div>
                 </div>
 
@@ -73,6 +73,9 @@
                         📋 Copy Candidate Link
                     </button>
                 </div>
+                
+                <br>
+                <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444;" onclick="handleLogout()">Logout</button>
             </div>
         </section>
 

@@ -41,8 +41,13 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-wrapper">
-                            <input type="password" id="password" placeholder="Enter password" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji')" title="Toggle Password Visibility">
+                            <!-- Floating Caret Tracker Emoji -->
+                            <span id="login-tracker-emoji" class="tracker-emoji hidden">🐵</span>
+                            
+                            <input type="password" id="password" placeholder="Enter password" required oninput="updateTrackerPos('password', 'login-tracker-emoji')">
+                            
+                            <!-- Static Toggle Button -->
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', 'login-pwd-emoji', 'login-tracker-emoji')" title="Toggle Password Visibility">
                                 <span id="login-pwd-emoji" class="emoji-icon">🙈</span>
                             </button>
                         </div>
@@ -79,8 +84,11 @@
                     <div class="form-group">
                         <label for="regPassword">Set Password</label>
                         <div class="password-wrapper">
-                            <input type="password" id="regPassword" placeholder="Set password" required>
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword', 'reg-pwd-emoji')" title="Toggle Password Visibility">
+                            <span id="reg-tracker-emoji" class="tracker-emoji hidden">🐵</span>
+
+                            <input type="password" id="regPassword" placeholder="Set password" required oninput="updateTrackerPos('regPassword', 'reg-tracker-emoji')">
+                            
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('regPassword', 'reg-pwd-emoji', 'reg-tracker-emoji')" title="Toggle Password Visibility">
                                 <span id="reg-pwd-emoji" class="emoji-icon">🙈</span>
                             </button>
                         </div>
@@ -98,8 +106,6 @@
 
         <!-- DASHBOARD PAGE VIEW -->
         <section id="dashboard-page" class="hidden" style="width: 100%;">
-            
-            <!-- Dashboard Overview Card -->
             <div class="card">
                 <h2>Dashboard Overview</h2>
                 <p id="welcome-text">Welcome back!</p>
@@ -189,9 +195,7 @@
 
                 <br>
                 <h3 style="text-align: left; margin-bottom: 12px;">Active Test List</h3>
-                <div id="test-list-container">
-                    <!-- Dynamic Tests Inserted Here -->
-                </div>
+                <div id="test-list-container"></div>
             </div>
 
             <!-- CANDIDATES DIRECTORY TABLE -->
@@ -209,9 +213,7 @@
                                 <th style="padding: 10px;">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="candidate-table-body">
-                            <!-- Dynamic Candidate Rows -->
-                        </tbody>
+                        <tbody id="candidate-table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -219,6 +221,9 @@
         </section>
 
     </main>
+
+    <!-- Canvas Helper for Canvas Caret Tracking -->
+    <canvas id="textWidthCanvas" style="display:none;"></canvas>
 
     <!-- Toast Notification Popup -->
     <div id="copyToast" class="toast-notification hidden">

@@ -1,19 +1,15 @@
-// Global Portal Data State - Loaded from LocalStorage
 let isLoggedIn = false;
 let currentUserRole = "";
 
-// Dynamic Data Arrays with Permanent LocalStorage Persistence
 let testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
 let registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 let tempQuestionsBatch = [];
 
-// FIXED ADMIN CREDENTIALS
 const ADMIN_CREDENTIALS = {
     username: "Nishantsingh@21",
     password: "Nikki812616"
 };
 
-// Password Toggle & Animated Monkey Tracking Handler
 function togglePasswordVisibility(inputId, emojiId, trackerId) {
     const inputField = document.getElementById(inputId);
     const emojiSpan = document.getElementById(emojiId);
@@ -23,7 +19,7 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
 
     if (inputField.type === "password") {
         inputField.type = "text";
-        emojiSpan.innerText = "🐵"; // Open Eyes Monkey
+        emojiSpan.innerText = "🐵";
         emojiSpan.classList.add("emoji-peek-anim");
 
         if (trackerSpan) {
@@ -32,7 +28,7 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
         }
     } else {
         inputField.type = "password";
-        emojiSpan.innerText = "🙈"; // Closed Eyes Monkey
+        emojiSpan.innerText = "🙈";
         emojiSpan.classList.add("emoji-peek-anim");
 
         if (trackerSpan) {
@@ -45,7 +41,6 @@ function togglePasswordVisibility(inputId, emojiId, trackerId) {
     }, 300);
 }
 
-// Dynamic Cursor Tracker Calculation
 function updateTrackerPos(inputId, trackerId) {
     const inputField = document.getElementById(inputId);
     const trackerSpan = document.getElementById(trackerId);
@@ -68,7 +63,6 @@ function updateTrackerPos(inputId, trackerId) {
     trackerSpan.style.transform = `translateX(${calculatedPos}px)`;
 }
 
-// Dynamic Working Link Generator for GitHub Pages
 function copyCandidateLink() {
     const liveUrl = window.location.href.split('#')[0];
     const candidateRegLink = `${liveUrl}#register`;
@@ -84,7 +78,6 @@ function copyCandidateLink() {
     }
 }
 
-// Page Navigation
 function showPage(pageId) {
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('register-page').classList.add('hidden');
@@ -96,7 +89,6 @@ function showPage(pageId) {
     }
 }
 
-// Protected Dashboard Opening
 function openDashboard() {
     if (!isLoggedIn) {
         showToast("⚠️ Please login first to access the dashboard!");
@@ -106,17 +98,25 @@ function openDashboard() {
     showPage('dashboard-page');
 }
 
-// Candidate Registration Handler (Saves to Permanent Storage)
+// CANDIDATE REGISTRATION HANDLER
 function handleCandidateRegister(event) {
-    event.preventDefault();
-    const fullname = document.getElementById('regFullname').value.trim();
-    const username = document.getElementById('regUsername').value.trim().toLowerCase();
-    const password = document.getElementById('regPassword').value.trim();
+    if (event) event.preventDefault();
 
-    // Latest LocalStorage Check
+    const fullname = document.getElementById('regFullname').value.trim();
+    const usernameInput = document.getElementById('regUsername').value.trim();
+    const passwordInput = document.getElementById('regPassword').value.trim();
+
+    if (!fullname || !usernameInput || !passwordInput) {
+        showToast("⚠️ Please fill all fields!");
+        return;
+    }
+
+    // Direct LocalStorage Pull
     registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 
-    const exists = registeredCandidates.some(c => c.username === username);
+    const usernameLower = usernameInput.toLowerCase();
+    const exists = registeredCandidates.some(c => c.username.toLowerCase() === usernameLower);
+
     if (exists) {
         showToast("❌ Username already taken! Choose another.");
         return;
@@ -125,50 +125,55 @@ function handleCandidateRegister(event) {
     const newCandidate = {
         id: `CAND-${100 + registeredCandidates.length + 1}`,
         name: fullname,
-        username: username,
-        password: password,
+        username: usernameInput, // Stores original casing
+        password: passwordInput,
         status: "Active"
     };
 
     registeredCandidates.push(newCandidate);
-    
-    // Save permanently in browser storage
     localStorage.setItem('portal_candidates', JSON.stringify(registeredCandidates));
 
     document.getElementById('registerForm').reset();
-    showToast("✅ Registration successful! Please login.");
-    
-    // Auto switch to candidate login view
+    showToast("✅ Registration successful! Directing to Login...");
+
+    // Auto set candidate dropdown and prefill username in Login screen
     document.getElementById('userRole').value = 'candidate';
-    document.getElementById('username').value = username;
+    document.getElementById('username').value = usernameInput;
+    document.getElementById('password').value = '';
+
     showPage('login-page');
 }
 
-// Handle Secure Login
+// SECURE LOGIN HANDLER
 function handleLogin(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
+
     const role = document.getElementById('userRole').value;
-    const username = document.getElementById('username').value.trim().toLowerCase();
-    const password = document.getElementById('password').value.trim();
+    const usernameInput = document.getElementById('username').value.trim();
+    const passwordInput = document.getElementById('password').value.trim();
+
+    if (!usernameInput || !passwordInput) {
+        showToast("⚠️ Enter both Username and Password!");
+        return;
+    }
 
     if (role === 'admin') {
-        const rawUsername = document.getElementById('username').value.trim();
-        if (rawUsername !== ADMIN_CREDENTIALS.username || password !== ADMIN_CREDENTIALS.password) {
+        if (usernameInput !== ADMIN_CREDENTIALS.username || passwordInput !== ADMIN_CREDENTIALS.password) {
             showToast("❌ Invalid Admin Username or Password!");
             return;
         }
     } 
 
     if (role === 'candidate') {
-        // Fetch fresh candidate data from LocalStorage
+        // Refresh local storage array
         registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 
         const foundCandidate = registeredCandidates.find(
-            c => c.username.toLowerCase() === username && c.password === password
+            c => c.username.toLowerCase() === usernameInput.toLowerCase() && c.password === passwordInput
         );
         
         if (!foundCandidate) {
-            showToast("❌ Invalid Username or Password!");
+            showToast("❌ Invalid Candidate Credentials! Verify Username/Password.");
             return;
         }
     }
@@ -176,7 +181,7 @@ function handleLogin(event) {
     isLoggedIn = true;
     currentUserRole = role;
 
-    document.getElementById('welcome-text').innerText = `Welcome back, ${username} (${role.toUpperCase()})`;
+    document.getElementById('welcome-text').innerText = `Welcome back, ${usernameInput} (${role.toUpperCase()})`;
 
     const adminSection = document.getElementById('admin-test-section');
     const candidateSection = document.getElementById('candidates-directory-section');
@@ -194,7 +199,6 @@ function handleLogin(event) {
     showPage('dashboard-page');
 }
 
-// Add Question to Draft Batch
 function addQuestionToCurrentBatch() {
     const qText = document.getElementById('qText').value.trim();
     const optA = document.getElementById('optA').value.trim();
@@ -224,9 +228,8 @@ function addQuestionToCurrentBatch() {
     showToast("✅ Question added to draft!");
 }
 
-// Admin: Create New Test (Saves to Storage)
 function handleCreateTest(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     const title = document.getElementById('testTitle').value;
     const duration = document.getElementById('testDuration').value;
 
@@ -248,7 +251,6 @@ function handleCreateTest(event) {
     showToast("✅ Test published with questions!");
 }
 
-// Render Dynamic Stats & Modules
 function renderPortalData() {
     registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
     testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
@@ -303,7 +305,6 @@ function renderPortalData() {
     }
 }
 
-// Admin: Delete Test
 function deleteTest(testId) {
     testsData = testsData.filter(t => t.id !== testId);
     localStorage.setItem('portal_tests', JSON.stringify(testsData));
@@ -311,7 +312,6 @@ function deleteTest(testId) {
     showToast("🗑️ Test removed!");
 }
 
-// Handle Logout
 function handleLogout() {
     isLoggedIn = false;
     currentUserRole = "";
@@ -320,7 +320,6 @@ function handleLogout() {
     showPage('login-page');
 }
 
-// Fallback Copy Function
 function fallbackCopyText(text) {
     const tempInput = document.createElement("input");
     tempInput.value = text;
@@ -331,7 +330,6 @@ function fallbackCopyText(text) {
     showToast("✨ Link successfully copied!");
 }
 
-// Toast Popup
 function showToast(message) {
     const toast = document.getElementById("copyToast");
     if (!toast) return;
@@ -346,7 +344,6 @@ function showToast(message) {
     }, 3000);
 }
 
-// Auto open candidate registration if hash exists in URL
 window.addEventListener('DOMContentLoaded', () => {
     if (window.location.hash === '#register') {
         showPage('register-page');

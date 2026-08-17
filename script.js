@@ -6,6 +6,7 @@ let testsData = JSON.parse(localStorage.getItem('portal_tests')) || [];
 let registeredCandidates = JSON.parse(localStorage.getItem('portal_candidates')) || [];
 let examSubmissions = JSON.parse(localStorage.getItem('portal_submissions')) || [];
 let tempQuestionsBatch = [];
+let parsedBulkBatch = [];
 
 let activeExamTest = null;
 let pendingExamTestId = null;
@@ -109,6 +110,155 @@ function addQuestionToCurrentBatch() {
     showToast("✅ Question added!");
 }
 
+/* ================= SMART BULK QUESTION PARSER LOGIC ================= */
+
+function previewBulkEntries() {
+    const bulkInput = document.getElementById('bulkQuestionsInput');
+    const rawText = bulkInput ? bulkInput.value.trim() : '';
+
+    if (!rawText) {
+        showToast("⚠️ Please paste question text first!");
+        return;
+    }
+
+    parsedBulkBatch = parseBulkText(rawText);
+
+    const previewContainer = document.getElementById('bulk-preview-container');
+    if (!previewContainer) return;
+
+    if (parsedBulkBatch.length === 0) {
+        previewContainer.innerHTML = '<p style="color: #ef4444; margin-top: 10px;">⚠️ No valid questions could be parsed. Check your format.</p>';
+        return;
+    }
+
+    let html = `<p style="color: #4ade80; margin-bottom: 12px; font-weight: bold;">✔ Parsed ${parsedBulkBatch.length} Question(s) successfully:</p>`;
+    
+    parsedBulkBatch.forEach((q, idx) => {
+        let optionsHtml = '';
+        if (q.type === 'mcq' && q.options) {
+            optionsHtml = `
+                <div style="font-size: 0.85rem; color: #94a3b8; margin: 6px 0;">
+                    <b>A:</b> ${q.options.A} | <b>B:</b> ${q.options.B} | <b>C:</b> ${q.options.C} | <b>D:</b> ${q.options.D}
+                </div>
+            `;
+        }
+
+        html += `
+            <div class="parsed-q-card">
+                <span class="parsed-q-type-badge">${q.type.toUpperCase()} | ${q.marks} Mark(s)</span>
+                <p style="font-weight: 600; color: #f8fafc;">Q${idx + 1}. ${q.question}</p>
+                ${optionsHtml}
+                <p style="font-size: 0.85rem; color: #4ade80; margin-top: 4px;"><strong>Correct Answer:</strong> ${q.answer}</p>
+            </div>
+        `;
+    });
+
+    previewContainer.innerHTML = html;
+
+    const confirmBtn = document.getElementById('confirmBulkBtn');
+    if (confirmBtn) confirmBtn.classList.remove('hidden');
+}
+
+function parseBulkText(text) {
+    const blocks = text.split(/\n\s*\n+/);
+    const questions = [];
+
+    blocks.forEach((block) => {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length === 0) return;
+
+        let questionText = '';
+        let options = { A: '', B: '', C: '', D: '' };
+        let answer = '';
+        let marks = 1;
+        let isMcq = false;
+
+        lines.forEach((line) => {
+            // Check Marks
+            const marksMatch = line.match(/(?:marks?|pts?|points?)\s*[:=-]\s*(\d+)/i);
+            if (marksMatch) {
+                marks = parseInt(marksMatch[1]) || 1;
+                return;
+            }
+
+            // Check Answer
+            const ansMatch = line.match(/(?:ans|answer|correct)\s*[:=-]\s*(.+)/i);
+            if (ansMatch) {
+                answer = ansMatch[1].trim();
+                return;
+            }
+
+            // Check Options (A), B), C), D) or A., B., C., D.)
+            const optMatch = line.match(/^([A-D])[\.\)\:-]\s*(.+)/i);
+            if (optMatch) {
+                isMcq = true;
+                const key = optMatch[1].toUpperCase();
+                options[key] = optMatch[2].trim();
+                return;
+            }
+
+            // Extract Question Statement
+            if (!questionText) {
+                questionText = line.replace(/^(?:Q|Q\.|Question|\d+[\.\)\:-])\s*/i, '').trim();
+            } else {
+                questionText += ' ' + line;
+            }
+        });
+
+        if (questionText) {
+            if (isMcq && options.A && options.B) {
+                let formattedAns = answer.toUpperCase();
+                if (!['A', 'B', 'C', 'D'].includes(formattedAns)) {
+                    formattedAns = 'A'; 
+                }
+
+                questions.push({
+                    id: Date.now() + Math.random(),
+                    type: 'mcq',
+                    question: questionText,
+                    options: options,
+                    answer: formattedAns,
+                    marks: marks
+                });
+            } else {
+                questions.push({
+                    id: Date.now() + Math.random(),
+                    type: 'oneword',
+                    question: questionText,
+                    answer: answer || '',
+                    marks: marks
+                });
+            }
+        }
+    });
+
+    return questions;
+}
+
+function confirmAddBulkToExam() {
+    if (!parsedBulkBatch || parsedBulkBatch.length === 0) {
+        showToast("⚠️ No parsed questions to add!");
+        return;
+    }
+
+    tempQuestionsBatch.push(...parsedBulkBatch);
+
+    parsedBulkBatch = [];
+    const bulkInput = document.getElementById('bulkQuestionsInput');
+    if (bulkInput) bulkInput.value = '';
+
+    const previewContainer = document.getElementById('bulk-preview-container');
+    if (previewContainer) previewContainer.innerHTML = '';
+
+    const confirmBtn = document.getElementById('confirmBulkBtn');
+    if (confirmBtn) confirmBtn.classList.add('hidden');
+
+    document.getElementById('draft-questions-preview').innerText = `✓ ${tempQuestionsBatch.length} question(s) added to paper.`;
+    showToast(`✅ ${tempQuestionsBatch.length} questions added to current exam batch!`);
+}
+
+/* ==================================================================== */
+
 function handleCreateTest(event) {
     if (event) event.preventDefault();
     const title = document.getElementById('testTitle').value.trim();
@@ -182,7 +332,6 @@ function renderAdminData() {
             row.style.cursor = "pointer";
             row.className = "clickable-history";
             
-            // Clicking candidate name opens audit report for admin
             row.onclick = () => viewSubmissionDetails(sub, true);
 
             row.innerHTML = `
@@ -278,7 +427,6 @@ function viewSubmissionDetails(sub, isAdmin = false) {
         `;
     });
 
-    // Add Return Button based on who is viewing
     breakdownHtml += `
         <div style="margin-top: 20px; text-align: center;">
             <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="${isAdmin ? "showPage('admin-dashboard-page'); renderAdminData();" : "openDashboard();"}">
@@ -491,7 +639,6 @@ function submitCandidateExam(event, isAutoSubmit = false) {
     document.getElementById('result-total-score').innerText = `${scoredMarks} / ${totalMarks}`;
     document.getElementById('result-summary-stats').innerText = `Attempted: ${activeExamTest.questions.length - unattemptedCount} | Unattempted: ${unattemptedCount} | Time Taken: ${timeTakenStr}`;
     
-    // Append Return to Dashboard button for candidate post-submission view
     breakdownHtml += `
         <div style="margin-top: 20px; text-align: center;">
             <button class="btn btn-outline" style="border-color: #818cf8; color: #818cf8; width: 100%; padding: 10px;" onclick="openDashboard()">
